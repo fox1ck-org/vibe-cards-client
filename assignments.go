@@ -86,6 +86,14 @@ type RequestCardInput struct {
 	// the call refuses rather than issuing one that cannot be used.
 	BillingProfileID string `json:"billingProfileId,omitempty"`
 	Note             string `json:"note,omitempty"`
+	// OwnerSub is whose card this is, as a Keycloak sub. REQUIRED.
+	//
+	// It is what vibe-finance bills the spend to, and it decides which Brocard
+	// user the card is drawn against. A service issuing on somebody's behalf
+	// must say whose it is: a card owned by the service attributes a buyer's
+	// charges to nobody, and reconciliation reports them as a residual with no
+	// payee. vibe-cards refuses the request without it.
+	OwnerSub string `json:"ownerSub"`
 }
 
 // RequestCard issues a card and claims it for the subject in one call.
