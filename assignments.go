@@ -53,6 +53,10 @@ type Assignment struct {
 	RevokedAt        *time.Time `json:"revokedAt,omitempty"`
 	RevokeReason     string     `json:"revokeReason"`
 
+	// HoldingID names the holding this claim was made under — who had the card
+	// at the time. Empty for claims made before the pool existed.
+	HoldingID string `json:"holdingId"`
+
 	CardLastFour string `json:"cardLastFour"`
 	CardName     string `json:"cardName"`
 	CardStatus   string `json:"cardStatus"`

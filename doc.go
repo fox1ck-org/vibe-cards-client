@@ -14,6 +14,20 @@
 // this repository is released in lockstep with vibe-cards, and a consumer
 // pinning an old tag is choosing to lag, not drifting by accident.
 //
+// There are two ways to get a card, and they mean different things:
+//
+//   - DrawCard takes one out of a pool the estate already owns and hands it
+//     back with ReleaseHolding when the subject is done. It costs nothing, so
+//     it does not have to be gated on somebody agreeing to spend.
+//   - RequestCard ISSUES one at the provider, which costs a fee every time.
+//     That is why automatic issuing is switched off in production. Prefer
+//     DrawCard; reach for RequestCard only where a new card is genuinely the
+//     point.
+//
+// A card that nobody releases is a card the estate pays to replace, so the
+// release is not optional politeness: a dead account, a replaced funding
+// source or a handover should all give the card back.
+//
 // Two things it deliberately does NOT do:
 //
 //   - It does not model a Facebook ad account, or an anti-detect account, or
