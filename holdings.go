@@ -48,6 +48,23 @@ type Holding struct {
 	CardName     string `json:"cardName"`
 	CardStatus   string `json:"cardStatus"`
 	GroupName    string `json:"groupName"`
+	// HolderLabel is the holder in words — the member roster's name or e-mail
+	// when vibe-cards knows them, else the e-mail recorded at draw time.
+	HolderLabel string `json:"holderLabel"`
+	// Claims are the live claims made under this holding.
+	Claims []HoldingClaim `json:"claims"`
+}
+
+// HoldingClaim is a live claim seen from its holding — enough to say "this
+// card funds account X in vibe-accounts".
+type HoldingClaim struct {
+	AssignmentID string `json:"assignmentId"`
+	SubjectApp   string `json:"subjectApp"`
+	SubjectType  string `json:"subjectType"`
+	SubjectID    string `json:"subjectId"`
+	Purpose      string `json:"purpose"`
+	Status       string `json:"status"`
+	ExternalRef  string `json:"externalRef"`
 }
 
 // Live reports whether the holding still occupies a seat on the card.
