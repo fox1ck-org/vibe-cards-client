@@ -5,19 +5,6 @@ import (
 	"time"
 )
 
-// Draw outcomes, as vibe-cards spells them.
-const (
-	// OutcomeDrawn — a card came out of the pool's stock.
-	OutcomeDrawn = "DRAW_OUTCOME_DRAWN"
-	// OutcomeReused — the subject already held one. Nothing was drawn and
-	// nothing was spent.
-	OutcomeReused = "DRAW_OUTCOME_REUSED"
-	// OutcomeNoStock — the pool is empty. NOT an error: the caller may draw,
-	// the pool exists, and there is nothing free. Hold and try later; the
-	// pool's own top-up target is what fixes it.
-	OutcomeNoStock = "DRAW_OUTCOME_NO_STOCK"
-)
-
 // Holding is one person holding one card for a stretch of time.
 //
 // A claim says "this card funds that ad account"; a holding says "this person
@@ -44,10 +31,10 @@ type Holding struct {
 	ReleasedBy    string     `json:"releasedBy"`
 	ReleaseReason string     `json:"releaseReason"`
 
-	CardLastFour string `json:"cardLastFour"`
-	CardName     string `json:"cardName"`
-	CardStatus   string `json:"cardStatus"`
-	GroupName    string `json:"groupName"`
+	CardLastFour string     `json:"cardLastFour"`
+	CardName     string     `json:"cardName"`
+	CardStatus   CardStatus `json:"cardStatus"`
+	GroupName    string     `json:"groupName"`
 	// HolderLabel is the holder in words — the member roster's name or e-mail
 	// when vibe-cards knows them, else the e-mail recorded at draw time.
 	HolderLabel string `json:"holderLabel"`
@@ -100,7 +87,7 @@ type DrawInput struct {
 type DrawResult struct {
 	Holding    *Holding    `json:"holding"`
 	Assignment *Assignment `json:"assignment"`
-	Outcome    string      `json:"outcome"`
+	Outcome    DrawOutcome `json:"outcome"`
 }
 
 // NoStock reports whether the pool had nothing free. Callers should hold rather
