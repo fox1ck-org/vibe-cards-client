@@ -74,8 +74,12 @@ var (
 	// ErrNotBindable means the card or its claim is in a state that cannot be
 	// presented: closed, blocked, revoked.
 	ErrNotBindable = errors.New("card is not in a bindable state")
-	ErrNotFound    = errors.New("not found")
-	ErrForbidden   = errors.New("forbidden")
+	// ErrUnreadable means the provider's page for this card shows no usable
+	// expiry or CVV. vibe-cards quarantined the card as it learned this, so
+	// the answer is not to retry but to return the card and draw another.
+	ErrUnreadable = errors.New("card is unreadable: the provider hides its expiry or cvv")
+	ErrNotFound   = errors.New("not found")
+	ErrForbidden  = errors.New("forbidden")
 )
 
 // APIError is a non-2xx answer from vibe-cards.
@@ -99,6 +103,8 @@ func classify(e *APIError) error {
 		return fmt.Errorf("%w: %s", ErrGrantExpired, e.Message)
 	case strings.Contains(e.Message, "not bindable"):
 		return fmt.Errorf("%w: %s", ErrNotBindable, e.Message)
+	case strings.Contains(e.Message, "unreadable"):
+		return fmt.Errorf("%w: %s", ErrUnreadable, e.Message)
 	}
 	switch e.Code {
 	case "not_found":
