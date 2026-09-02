@@ -61,6 +61,35 @@ type Assignment struct {
 	CardName     string     `json:"cardName"`
 	CardStatus   CardStatus `json:"cardStatus"`
 	CardCurrency Currency   `json:"cardCurrency"`
+
+	// The card's health. CardUnreadable is the quarantine: the provider's
+	// page hides the expiry and CVV, so no form can be filled with it.
+	// CardReplacedBy* is set when the provider reissued the card and a person
+	// linked the replacement in vibe-cards; a holder still on this claim
+	// should take that card by name.
+	CardUnreadable         bool   `json:"cardUnreadable"`
+	CardReplacedByCardID   string `json:"cardReplacedByCardId"`
+	CardReplacedByLastFour string `json:"cardReplacedByLastFour"`
+}
+
+// Unusable names why the card behind a live claim cannot be presented —
+// "blocked", "closed", "unreadable", "replaced" — or "" when it can. The
+// order is the order a holder should read them in: a replaced card names
+// its successor, and that is the fact to act on before any other.
+func (a *Assignment) Unusable() string {
+	switch {
+	case a == nil:
+		return ""
+	case a.CardReplacedByCardID != "":
+		return "replaced"
+	case a.CardUnreadable:
+		return "unreadable"
+	case a.CardStatus == CardStatusBlocked:
+		return "blocked"
+	case a.CardStatus == CardStatusClosed:
+		return "closed"
+	}
+	return ""
 }
 
 // Live reports whether the claim still holds its card.
