@@ -81,6 +81,15 @@ type DrawInput struct {
 	SubjectType string `json:"subjectType,omitempty"`
 	SubjectID   string `json:"subjectId,omitempty"`
 	Purpose     string `json:"purpose,omitempty"`
+
+	// CardID names a specific card instead of any free one: a free card of
+	// the pool by name, or a card this holder already holds — which then
+	// carries one more claim on the same holding (one card funding a
+	// person's second account is one physical use). A card held by somebody
+	// else, or full, is refused (FailedPrecondition), never swapped for
+	// another. Issue fees are why this exists: a card with little spend is
+	// worth handing on.
+	CardID string `json:"cardId,omitempty"`
 }
 
 // DrawResult is what the pool did.
@@ -144,4 +153,50 @@ func (c *Client) ListHoldings(ctx context.Context, in HoldingListInput) ([]Holdi
 		return nil, err
 	}
 	return out.Holdings, nil
+}
+
+// DrawableListInput asks which cards one person could be handed.
+type DrawableListInput struct {
+	// GroupID may be empty when the caller is granted exactly one pool.
+	GroupID string `json:"groupId,omitempty"`
+	// HolderUserSub is whose holdings count as "already mine". Required.
+	HolderUserSub string `json:"holderUserSub"`
+	// Search matches the last four or the card's name.
+	Search string `json:"search,omitempty"`
+}
+
+// DrawableCard is a card a holder could be given: enough to recognise it and
+// to say who is already on it, never enough to use it.
+type DrawableCard struct {
+	CardID    string     `json:"cardId"`
+	LastFour  string     `json:"lastFour"`
+	Name      string     `json:"name"`
+	GroupID   string     `json:"groupId"`
+	GroupName string     `json:"groupName"`
+	Status    CardStatus `json:"status"`
+	// SeatsFree is how many more holders the card can take. 0 with
+	// HeldByHolder is still drawable: a second claim rides the holding.
+	SeatsFree int32 `json:"seatsFree"`
+	// HeldByHolder: the holder named in the request already holds this card.
+	HeldByHolder bool `json:"heldByHolder"`
+	// Holders is everybody live on the card, in words.
+	Holders []string `json:"holders"`
+	// Claims is how many things the card already funds, across holders.
+	Claims int32 `json:"claims"`
+	// Spent is what the card has spent as the provider last reported it. The
+	// card with little on it is the one worth reusing.
+	Spent string `json:"spent"`
+}
+
+// ListDrawableCards is what DrawCard with a CardID could take for this
+// holder: the free cards of the pool and the cards they are already on. A
+// console offering "take an existing card" lists these.
+func (c *Client) ListDrawableCards(ctx context.Context, in DrawableListInput) ([]DrawableCard, error) {
+	var out struct {
+		Cards []DrawableCard `json:"cards"`
+	}
+	if err := c.call(ctx, "/cards.v1.AssignmentService/ListDrawableCards", in, &out, false); err != nil {
+		return nil, err
+	}
+	return out.Cards, nil
 }
