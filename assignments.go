@@ -57,10 +57,10 @@ type Assignment struct {
 	// at the time. Empty for claims made before the pool existed.
 	HoldingID string `json:"holdingId"`
 
-	CardLastFour string `json:"cardLastFour"`
-	CardName     string `json:"cardName"`
-	CardStatus   string `json:"cardStatus"`
-	CardCurrency string `json:"cardCurrency"`
+	CardLastFour string     `json:"cardLastFour"`
+	CardName     string     `json:"cardName"`
+	CardStatus   CardStatus `json:"cardStatus"`
+	CardCurrency Currency   `json:"cardCurrency"`
 }
 
 // Live reports whether the claim still holds its card.
