@@ -212,6 +212,23 @@ func (c *Client) RevokeAssignment(ctx context.Context, id, reason string) (*Assi
 	return &out, nil
 }
 
+// ReleaseClaim gives back ONE claim and, only when it was the last thing its
+// holding funded, the card with it.
+//
+// This is what a consumer whose SUBJECT is finished should call: an account
+// that was retired, one of two accounts a person funds from the same card.
+// ReleaseHolding is the door for a HOLDER who is finished — it revokes every
+// claim under the holding, which unfunds the neighbours that were riding the
+// same card.
+func (c *Client) ReleaseClaim(ctx context.Context, id, reason string) (*Assignment, error) {
+	var out Assignment
+	if err := c.call(ctx, "/cards.v1.AssignmentService/ReleaseClaim",
+		map[string]string{"id": id, "reason": reason}, &out, false); err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
 // MarkProvisioned reports that the far end accepted the card, and what it calls
 // the funding source it created.
 func (c *Client) MarkProvisioned(ctx context.Context, id, externalRef string) (*Assignment, error) {

@@ -16,7 +16,7 @@ panicking.
 ## What it does
 
 Takes a card out of a pool for somebody (`DrawCard`) and hands it back
-(`ReleaseHolding`), claims a specific card for a subject (`AssignCard`), reads
+(`ReleaseClaim` for one subject, `ReleaseHolding` for the whole holding), claims a specific card for a subject (`AssignCard`), reads
 what a subject holds (`ListAssignments`, `ListHoldings`), and — for a service that is about to present
 a card to a payment form — exchanges a **single-use, two-minute ticket** for its
 details (`CardDetailsFor`).
@@ -44,8 +44,13 @@ the subject is finished with it — a dead account, a replaced funding source, a
 handover:
 
 ```go
-_, err := cards.ReleaseHolding(ctx, holdingID, "account died")
+_, err := cards.ReleaseClaim(ctx, assignmentID, "account died")
 ```
+
+`ReleaseClaim` returns the claim your subject made and hands the card back only
+when nothing else was funded from it. Reach for `ReleaseHolding` only when the
+**holder** is done with the card: it revokes every claim under the holding,
+including the ones another of that person's subjects is spending through.
 
 Releasing also drops the card's limit to zero once nobody is left on it, which
 is what makes a leaked number from a card sitting in stock worth nothing.
