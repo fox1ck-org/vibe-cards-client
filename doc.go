@@ -17,7 +17,8 @@
 // There are two ways to get a card, and they mean different things:
 //
 //   - DrawCard takes one out of a pool the estate already owns and hands it
-//     back with ReleaseHolding when the subject is done. It costs nothing, so
+//     back with ReleaseClaim when the subject is done (ReleaseHolding is the
+//     holder's door and revokes every claim on the card). It costs nothing, so
 //     it does not have to be gated on somebody agreeing to spend.
 //   - RequestCard ISSUES one at the provider, which costs a fee every time.
 //     That is why automatic issuing is switched off in production. Prefer

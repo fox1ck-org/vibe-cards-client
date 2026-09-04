@@ -95,3 +95,38 @@ func TestReleaseHoldingSendsIdAndReason(t *testing.T) {
 		t.Fatal("a released holding must not read as live")
 	}
 }
+
+// The consumer's door, and the reason it exists: releasing the HOLDING revokes
+// every claim under it, including the one another of that person's accounts is
+// spending through. A subject that is finished releases its own claim.
+func TestReleaseClaimSendsIdAndReason(t *testing.T) {
+	var gotPath string
+	var gotBody map[string]string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotPath = r.URL.Path
+		_ = json.NewDecoder(r.Body).Decode(&gotBody)
+		_, _ = w.Write([]byte(`{"id":"a1","status":"revoked","revokeReason":"account retired"}`))
+	}))
+	defer srv.Close()
+
+	got, err := New(srv.URL, "vck_test").ReleaseClaim(context.Background(), "a1", "account retired")
+	if err != nil {
+		t.Fatalf("release the claim: %v", err)
+	}
+	if gotPath != "/cards.v1.AssignmentService/ReleaseClaim" {
+		t.Fatalf("wrong path: %s", gotPath)
+	}
+	if gotBody["id"] != "a1" || gotBody["reason"] != "account retired" {
+		t.Fatalf("wrong body: %#v", gotBody)
+	}
+	if got.Live() {
+		t.Fatal("a revoked claim must not read as live")
+	}
+}
+
+func TestNilClientAnswersOnReleaseClaim(t *testing.T) {
+	var c *Client
+	if _, err := c.ReleaseClaim(context.Background(), "a1", "reason"); !errors.Is(err, ErrNotConfigured) {
+		t.Fatalf("want ErrNotConfigured, got %v", err)
+	}
+}
