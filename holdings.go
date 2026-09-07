@@ -145,6 +145,35 @@ type HoldingListInput struct {
 }
 
 // ListHoldings answers "what is this person holding" and "who is on this card".
+// TransferInput hands a held card to somebody else.
+type TransferInput struct {
+	// HoldingID is the live holding being handed over.
+	HoldingID string `json:"id"`
+	// HolderUserSub is who the card goes to. Required: a card held by nobody
+	// puts spend on a payee that does not exist.
+	HolderUserSub string `json:"holderUserSub"`
+	HolderEmail   string `json:"holderEmail,omitempty"`
+	Reason        string `json:"reason,omitempty"`
+}
+
+// TransferHolding moves a card to another person without the card moving.
+//
+// This is what handing over the WORK looks like in a service that bills by
+// holder. Releasing and re-drawing would revoke the claims under the holding
+// (a neighbouring subject funded by the same card stops being funded), drop the
+// card's limit to zero, and quite possibly hand out a different card — which
+// then has to be typed into the payment form of everything the old one funded.
+//
+// The bill splits itself at the moment of the transfer: spend is attributed to
+// the holding live on the transaction's date, so nothing is recalculated.
+func (c *Client) TransferHolding(ctx context.Context, in TransferInput) (*Holding, error) {
+	var out Holding
+	if err := c.call(ctx, "/cards.v1.AssignmentService/TransferHolding", in, &out, false); err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
 func (c *Client) ListHoldings(ctx context.Context, in HoldingListInput) ([]Holding, error) {
 	var out struct {
 		Holdings []Holding `json:"holdings"`
