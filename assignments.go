@@ -2,6 +2,7 @@ package vibecards
 
 import (
 	"context"
+	"strconv"
 	"time"
 )
 
@@ -70,6 +71,41 @@ type Assignment struct {
 	CardUnreadable         bool   `json:"cardUnreadable"`
 	CardReplacedByCardID   string `json:"cardReplacedByCardId"`
 	CardReplacedByLastFour string `json:"cardReplacedByLastFour"`
+
+	// CardSpent and CardLimit are what the card has spent and what it may
+	// spend, as the provider last reported them — decimal strings in
+	// CardCurrency, CardLimit empty for a card with no ceiling. A consumer
+	// deciding whether this card will carry the next charge asks these two.
+	CardSpent string `json:"cardSpent"`
+	CardLimit string `json:"cardLimit"`
+	// CardSyncedAt is when the provider was last read. Show it with the
+	// number: a balance without its age reads as current when it is not.
+	CardSyncedAt *time.Time `json:"cardSyncedAt,omitempty"`
+}
+
+// Remaining is what is left of the card's ceiling, as a decimal string, and
+// whether it could be worked out at all: a card with no limit, an unparseable
+// figure or a provider that has never been read has no remainder, and saying
+// "0 left" about any of those sends somebody to swap a working card.
+func (a *Assignment) Remaining() (string, bool) {
+	if a == nil || a.CardLimit == "" {
+		return "", false
+	}
+	limit, err := strconv.ParseFloat(a.CardLimit, 64)
+	if err != nil {
+		return "", false
+	}
+	spent := 0.0
+	if a.CardSpent != "" {
+		if spent, err = strconv.ParseFloat(a.CardSpent, 64); err != nil {
+			return "", false
+		}
+	}
+	left := limit - spent
+	if left < 0 {
+		left = 0
+	}
+	return strconv.FormatFloat(left, 'f', 2, 64), true
 }
 
 // Unusable names why the card behind a live claim cannot be presented —
