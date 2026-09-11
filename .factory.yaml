@@ -1,0 +1,24 @@
+# Repo-local agentic policy. The vibe-kitchen DB is the capability/budget/gate
+# resolver; this file references it and never mirrors it.
+#
+# A pure Go library: no service, no database, no web. It is bound into Forge
+# projects as the CONTRACT between vibe-accounts and vibe-cards — a run reading
+# the card chain needs it open — and the runner refuses a bound repo that does
+# not declare how it is set up.
+factory_version: 1
+repo: fox1ck-org/vibe-cards-client
+pipeline: forge-task-pipeline
+default_spec: forge-task
+branch_protect: false
+specs: { required: false, paths: [docs/specs/] }
+
+worktree_setup:
+  - go mod download
+
+# `go test` IS here, unlike in the services: these tests are pure and need
+# nothing the workspace has not got, so leaving them out would drop the only
+# real check this repo has.
+worktree_checks:
+  - go build ./...
+  - go vet ./...
+  - go test ./...
