@@ -133,6 +133,21 @@ func (a *Assignment) Live() bool {
 	return a != nil && (a.Status == StatusReserved || a.Status == StatusActive)
 }
 
+// AwaitingFacebookVerification reports whether this reserved claim is
+// waiting for Facebook's $0 verification payment to flip it active —
+// the BindingObserver path — rather than for the farm to add the card.
+//
+// When Status is reserved and the card is active at the provider, the
+// card is ready and has been (or is being) added to Facebook's payment
+// form. The claim activates automatically once Facebook processes its
+// $0 confirmation charge. The CardSyncedAt timestamp says how fresh
+// the CardStatus reading is.
+func (a *Assignment) AwaitingFacebookVerification() bool {
+	return a != nil &&
+		a.Status == StatusReserved &&
+		a.CardStatus == CardStatusActive
+}
+
 // RequestCardInput asks for a card on terms, rather than for a specific card.
 //
 // This is the demand side, and the call a consumer preparing an account should
