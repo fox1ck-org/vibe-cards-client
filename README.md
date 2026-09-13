@@ -78,3 +78,7 @@ Tag in lockstep with the vibe-cards API it speaks to:
 ```
 git tag v0.2.0 && git push origin v0.2.0
 ```
+
+`ListCardTransactions` reads a concrete card's recorded charges in a bounded
+window (100 per page). Authorize the subject and verify its assignment first.
+It preserves decimal amounts and optional provider fees, and never returns PANs.
