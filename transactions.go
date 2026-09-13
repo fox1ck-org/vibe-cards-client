@@ -9,15 +9,15 @@ import (
 // Transaction is the provider's recorded charge, without card credentials.
 // Amount/Fee are major-unit decimals; nil Fee means an older API supplied none.
 type Transaction struct {
-	ID              string     `json:"id"`
-	CardID          string     `json:"cardId"`
-	ExternalID      string     `json:"externalId"`
-	Amount          string     `json:"amount"`
-	Currency        Currency   `json:"currency"`
-	MerchantName    string     `json:"merchantName"`
-	Status          string     `json:"status"`
-	TransactionDate *time.Time `json:"transactionDate"`
-	Fee             *string    `json:"fee,omitempty"`
+	ID              string            `json:"id"`
+	CardID          string            `json:"cardId"`
+	ExternalID      string            `json:"externalId"`
+	Amount          string            `json:"amount"`
+	Currency        Currency          `json:"currency"`
+	MerchantName    string            `json:"merchantName"`
+	Status          TransactionStatus `json:"status"`
+	TransactionDate *time.Time        `json:"transactionDate"`
+	Fee             *string           `json:"fee,omitempty"`
 }
 
 type TransactionPage struct {
@@ -53,4 +53,15 @@ func (c *Client) ListCardTransactions(ctx context.Context, cardID string, from, 
 		return nil, err
 	}
 	return &out, nil
+}
+
+// TransactionStatus accepts both numeric and named Connect protobuf enums.
+type TransactionStatus string
+
+func (s *TransactionStatus) UnmarshalJSON(b []byte) error {
+	v, err := decodeEnum(b, "TRANSACTION_STATUS_", map[int64]string{0: "", 1: "pending", 2: "completed", 3: "declined", 4: "refunded"})
+	if err == nil {
+		*s = TransactionStatus(v)
+	}
+	return err
 }
