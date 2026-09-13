@@ -16,7 +16,7 @@ func TestListCardTransactionsScopedAndExact(t *testing.T) {
 		if r.URL.Path != "/cards.v1.TransactionService/ListTransactions" || in["cardId"] != "card" || in["page"] != float64(2) || in["dateRange"] == nil {
 			t.Errorf("unscoped request: %v", in)
 		}
-		_, _ = w.Write([]byte(`{"transactions":[{"id":"tx","cardId":"card","amount":"2.00","currency":1,"status":2,"fee":"0.12"}],"pageInfo":{"totalPages":2}}`))
+		_, _ = w.Write([]byte(`{"transactions":[{"id":"tx","cardId":"card","amount":"2.00","currency":1,"status":2,"transactionDate":"2026-09-08T12:00:00Z","fee":"0.12"}],"pageInfo":{"totalPages":2}}`))
 	}))
 	defer server.Close()
 	c := New(server.URL, "key")

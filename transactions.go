@@ -22,7 +22,7 @@ type Transaction struct {
 
 type TransactionPage struct {
 	Transactions []Transaction `json:"transactions"`
-	PageInfo     struct {
+	PageInfo     *struct {
 		TotalPages int `json:"totalPages"`
 		TotalCount int `json:"totalCount"`
 	} `json:"pageInfo"`
@@ -51,6 +51,14 @@ func (c *Client) ListCardTransactions(ctx context.Context, cardID string, from, 
 	var out TransactionPage
 	if err := c.call(ctx, "/cards.v1.TransactionService/ListTransactions", in, &out, false); err != nil {
 		return nil, err
+	}
+	if out.PageInfo == nil || len(out.Transactions) > 100 {
+		return nil, errors.New("incomplete transaction page")
+	}
+	for _, tx := range out.Transactions {
+		if tx.ID == "" || tx.CardID != cardID || tx.TransactionDate == nil {
+			return nil, errors.New("invalid transaction page")
+		}
 	}
 	return &out, nil
 }
