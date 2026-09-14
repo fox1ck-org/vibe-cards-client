@@ -55,6 +55,31 @@ including the ones another of that person's subjects is spending through.
 Releasing also drops the card's limit to zero once nobody is left on it, which
 is what makes a leaked number from a card sitting in stock worth nothing.
 
+### A buyer's own pool
+
+A service acting for a person can open and run a pool that is *theirs* — funded
+from their own provider link — rather than drawing on the estate's shared stock:
+
+```go
+groups, err := cards.ListGroups(ctx, vibecards.ListGroupsInput{OwnerSub: buyerSub})
+if len(groups) == 0 {
+    g, err := cards.CreateGroup(ctx, vibecards.CreateGroupInput{
+        Name: "buyer pool", OwnerSub: buyerSub,
+        SharingMode: vibecards.SharingModeExclusive,
+        DefaultLimitCents: 30000, AutoIssue: true, MinAvailable: 1, MaxTotal: 5,
+    })
+}
+// Let an assistant see (not draw from) the pool; revoke when they leave.
+grant, err := cards.GrantGroupAccess(ctx, vibecards.GrantGroupAccessInput{
+    GroupID: g.ID, OwnerSub: buyerSub, SubjectID: assistantSub, CanDraw: false,
+})
+err = cards.RevokeGroupAccess(ctx, vibecards.RevokeGroupAccessInput{GrantID: grant.ID, OwnerSub: buyerSub})
+```
+
+`GrantGroupAccess` only ever grants a **person**; team grants are a console
+decision. `ListGroupGrants` reads who is on a pool (revoked rows on request).
+Then draw from it with `DrawCard{GroupID: g.ID, HolderUserSub: buyerSub}`.
+
 The details are never persisted by either side. They exist for the length of one
 outbound request. A person has no step in which they need them: `IssuePANGrant`
 refuses a JWT caller outright and requires an API key carrying the `pan:redeem`
