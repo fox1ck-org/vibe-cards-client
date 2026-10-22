@@ -1,0 +1,367 @@
+syntax = "proto3";
+
+package cards.v2;
+
+import "buf/validate/validate.proto";
+import "cards/v2/card.proto";
+import "cards/v2/common.proto";
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/fox1ck-org/vibe-cards/gen/cards/v2;cardsv2";
+
+// IssuingService is how the organisation issues: from the platform's
+// accounts (the default, paid by tariff) or from its own (an enterprise
+// option); the issuer's fee terms; the organisation's balance; the optional
+// top-up module; the holder data cards are presented with.
+//
+// An issuer is a plugin behind the provider port: its kind is a string from
+// the registry ("brocard", "fbm", "adhunt"), never an enum here, and what it
+// can do is its `capabilities` — a new issuer changes no proto.
+//
+// admin: everything; viewer: reads; member: ListBins (to issue) and the
+// report_time_zone of GetSettings (every other settings field is empty to a
+// member).
+service IssuingService {
+  rpc GetSettings(GetSettingsRequest) returns (GetSettingsResponse);
+  // UpdateSettings changes the mode, the default account, the report time
+  // zone and the top-up strategy. OWN needs the plan's custom-issuers
+  // feature (ERROR_REASON_NOT_IN_PLAN).
+  rpc UpdateSettings(UpdateSettingsRequest) returns (UpdateSettingsResponse);
+
+  // ListAccounts is the organisation's own issuer accounts (OWN mode). In
+  // PLATFORM mode it is empty: the organisation does not see the platform's.
+  rpc ListAccounts(ListAccountsRequest) returns (ListAccountsResponse);
+  // ConnectAccount stores an issuer key (encrypted; only the service reads
+  // it) and checks it with the issuer. With validate_only it checks and
+  // stores nothing — the onboarding's "check the connection".
+  rpc ConnectAccount(ConnectAccountRequest) returns (ConnectAccountResponse);
+  // DisconnectAccount stops issuing from an account. Its cards stay and keep
+  // syncing until closed.
+  rpc DisconnectAccount(DisconnectAccountRequest) returns (DisconnectAccountResponse);
+
+  // ListBins is what can be issued: BIN, network, currency, how fast, what
+  // the issuer can do with it, and what it costs (fee terms plus the
+  // platform's price) — the price is known before the press.
+  rpc ListBins(ListBinsRequest) returns (ListBinsResponse);
+  // ListFeeTerms is the issuer's conditions as numbers. No row for a kind
+  // means unknown; a row with zero means free.
+  rpc ListFeeTerms(ListFeeTermsRequest) returns (ListFeeTermsResponse);
+  // SetFeeTerms replaces the MANUAL terms of one account and BIN ("" = the
+  // whole account). Terms the provider reports (source PROVIDER) are the
+  // adapter's and are not written here.
+  rpc SetFeeTerms(SetFeeTermsRequest) returns (SetFeeTermsResponse);
+
+  // GetBalance is the organisation's balance with the platform (PLATFORM
+  // mode only): what issues and spend are paid from.
+  rpc GetBalance(GetBalanceRequest) returns (GetBalanceResponse);
+  // ListBalanceEntries is that balance's ledger.
+  rpc ListBalanceEntries(ListBalanceEntriesRequest) returns (ListBalanceEntriesResponse);
+  // TopUp moves money to a person's account at the issuer, when the top-up
+  // module is on in MANUAL or THRESHOLD mode and the issuer can move funds
+  // (ERROR_REASON_TOPUP_DISABLED otherwise).
+  rpc TopUp(TopUpRequest) returns (TopUpResponse);
+
+  // Holder data: the name and address cards are presented with, chosen per
+  // card, else per BIN, else per issuer account, else the organisation's
+  // default. A general merchant (AVS) concern, nothing specific to any one.
+  rpc ListHolderProfiles(ListHolderProfilesRequest) returns (ListHolderProfilesResponse);
+  // SaveHolderProfile creates (empty id) or replaces a profile and where it
+  // applies.
+  rpc SaveHolderProfile(SaveHolderProfileRequest) returns (SaveHolderProfileResponse);
+  // ArchiveHolderProfile refuses a profile something still resolves to
+  // (ERROR_REASON_PROFILE_IN_USE).
+  rpc ArchiveHolderProfile(ArchiveHolderProfileRequest) returns (ArchiveHolderProfileResponse);
+}
+
+enum IssueMode {
+  ISSUE_MODE_UNSPECIFIED = 0;
+  // The platform's accounts: the platform picks the issuer, the
+  // organisation pays issues and spend from its balance with the platform
+  // and never sees the issuer — only BIN and network.
+  ISSUE_MODE_PLATFORM = 1;
+  // The organisation's own issuer accounts (enterprise): its money stays at
+  // its issuers, and it picks the issuer.
+  ISSUE_MODE_OWN = 2;
+}
+
+message IssuingSettings {
+  IssueMode mode = 1;
+  // OWN mode: the account Issue uses when none is named.
+  string default_issuer_account_id = 2;
+  // IANA ("Europe/Kyiv"): what "today" means in spend and rules.
+  string report_time_zone = 3;
+  TopUpStrategy top_up = 4;
+  // Filled by the server: what the plan allows.
+  bool custom_issuers_available = 5;
+  bool top_up_available = 6;
+}
+
+// TopUpStrategy is the optional module that funds people's accounts at the
+// issuer — only where the issuer can move funds.
+message TopUpStrategy {
+  message Off {}
+  // A person (admin) tops up by hand with TopUp.
+  message Manual {}
+  // When a person's account falls below `below`, it is topped up to `up_to`.
+  message Threshold {
+    Money below = 1;
+    Money up_to = 2;
+  }
+  oneof s {
+    Off off = 1;
+    Manual manual = 2;
+    Threshold threshold = 3;
+  }
+}
+
+message GetSettingsRequest {}
+
+message GetSettingsResponse {
+  IssuingSettings settings = 1;
+}
+
+message UpdateSettingsRequest {
+  optional IssueMode mode = 1;
+  optional string default_issuer_account_id = 2;
+  optional string report_time_zone = 3;
+  optional TopUpStrategy top_up = 4;
+}
+
+message UpdateSettingsResponse {
+  IssuingSettings settings = 1;
+}
+
+message IssuerAccount {
+  enum Owner {
+    OWNER_UNSPECIFIED = 0;
+    // One of the platform's accounts.
+    OWNER_PLATFORM = 1;
+    // The organisation's own.
+    OWNER_ORG = 2;
+  }
+  string id = 1;
+  Owner owner = 2;
+  // The issuer kind from the registry: "brocard", "fbm", "adhunt", ….
+  string kind = 3;
+  // What the issuer can do: "issue", "pause", "close", "limit_total",
+  // "limit_per_txn", "rename", "number", "three_ds", "move_funds",
+  // "bin_catalog".
+  repeated string capabilities = 4;
+  Money balance = 5;
+  bool is_default = 6;
+  string name = 7;
+  int32 card_count = 8;
+  // When the balance runs out at the last 7 days' average daily spend on
+  // this account's cards. Unset: nothing was spent, or the balance is unknown.
+  optional google.protobuf.Timestamp runs_out_at = 9;
+}
+
+message ListAccountsRequest {}
+
+message ListAccountsResponse {
+  repeated IssuerAccount accounts = 1;
+}
+
+message ConnectAccountRequest {
+  // The issuer kind from the registry.
+  string kind = 1 [(buf.validate.field).string.min_len = 1];
+  string name = 2;
+  // The issuer's key and whatever else its adapter asks for. Never returned.
+  map<string, string> credentials = 3;
+  bool validate_only = 4;
+}
+
+message ConnectAccountResponse {
+  // Unset with validate_only.
+  optional IssuerAccount account = 1;
+  // What the check saw: the balance, the BINs, what the issuer can and
+  // cannot do.
+  Money balance = 2;
+  repeated string bins = 3;
+  repeated string capabilities = 4;
+}
+
+message DisconnectAccountRequest {
+  string id = 1 [(buf.validate.field).string.min_len = 1];
+}
+
+message DisconnectAccountResponse {}
+
+message Bin {
+  string bin = 1;
+  string network = 2;
+  string currency = 3;
+  // OWN mode only.
+  string issuer_account_id = 4;
+  // What cards of this BIN can do (Card.capabilities).
+  repeated string capabilities = 5;
+  // Neutral words from the adapter ("ads", "no_3ds", "shared_balance").
+  repeated string labels = 6;
+  // A short description of the terms for people.
+  string description = 7;
+  // How long an issue takes, at worst ("до 5 минут").
+  string readiness = 8;
+  repeated FeeTerm fee_terms = 9;
+  // The platform's price per issued card (PLATFORM mode, by tariff).
+  optional Money platform_issue_fee = 10;
+  // The platform's percentage of spend (PLATFORM mode, by tariff).
+  optional Decimal platform_spend_percent = 11;
+}
+
+message ListBinsRequest {}
+
+message ListBinsResponse {
+  repeated Bin bins = 1;
+}
+
+enum FeeKind {
+  FEE_KIND_UNSPECIFIED = 0;
+  FEE_KIND_ISSUE = 1;
+  FEE_KIND_MONTHLY = 2;
+  FEE_KIND_TXN = 3;
+  FEE_KIND_DECLINE = 4;
+  FEE_KIND_FX = 5;
+  FEE_KIND_REFUND = 6;
+}
+
+// FeeTerm is one of the issuer's conditions as a number. No row for a kind:
+// unknown. A row with zero percent and zero fixed: free.
+message FeeTerm {
+  enum Source {
+    SOURCE_UNSPECIFIED = 0;
+    // Reported by the issuer's adapter.
+    SOURCE_PROVIDER = 1;
+    // Entered by a person.
+    SOURCE_MANUAL = 2;
+  }
+  string issuer_account_id = 1;
+  // "" = every BIN of the account.
+  string bin = 2;
+  FeeKind kind = 3;
+  Decimal percent = 4;
+  Money fixed = 5;
+  optional Money min = 6;
+  optional Money max = 7;
+  Source source = 8;
+}
+
+message ListFeeTermsRequest {
+  string issuer_account_id = 1;
+  string bin = 2;
+}
+
+message ListFeeTermsResponse {
+  repeated FeeTerm terms = 1;
+}
+
+message SetFeeTermsRequest {
+  string issuer_account_id = 1 [(buf.validate.field).string.min_len = 1];
+  string bin = 2;
+  // Replaces the manual terms of (account, bin); empty clears them.
+  repeated FeeTerm terms = 3;
+}
+
+message SetFeeTermsResponse {
+  repeated FeeTerm terms = 1;
+}
+
+message GetBalanceRequest {}
+
+message GetBalanceResponse {
+  Money balance = 1;
+  // At the recent pace of spend, roughly how long it lasts. Unset when there
+  // is no spend to judge by.
+  optional google.protobuf.Timestamp runs_out_at = 2;
+}
+
+// BalanceEntry is one movement of the organisation's balance (PLATFORM mode
+// only).
+message BalanceEntry {
+  enum Kind {
+    KIND_UNSPECIFIED = 0;
+    KIND_TOPUP = 1;
+    KIND_SPEND = 2;
+    KIND_ISSUER_FEE = 3;
+    KIND_PLATFORM_FEE = 4;
+    KIND_REFUND = 5;
+    KIND_ADJUST = 6;
+  }
+  Kind kind = 1;
+  // Signed: a top-up is positive, spend negative.
+  Money amount = 2;
+  Money balance_after = 3;
+  // What it is about: "card:<id>", "tx:<id>", "topup:<id>".
+  string ref = 4;
+  google.protobuf.Timestamp at = 5;
+  string id = 6;
+  // Who caused it, when a person or service did (an issue, a manual
+  // adjustment).
+  optional Principal actor = 7;
+  // A line for people ("Выпуск 3 карт", "авто, карта ••4242").
+  string note = 8;
+}
+
+message ListBalanceEntriesRequest {
+  TimeRange range = 1;
+  repeated BalanceEntry.Kind kinds = 2;
+  PageRequest page = 3;
+}
+
+message ListBalanceEntriesResponse {
+  repeated BalanceEntry entries = 1;
+  PageResponse page = 2;
+}
+
+message TopUpRequest {
+  // Whose account at the issuer.
+  Principal person = 1 [(buf.validate.field).required = true];
+  string issuer_account_id = 2;
+  Money amount = 3 [(buf.validate.field).required = true];
+  string request_id = 4 [(buf.validate.field).string.min_len = 1];
+}
+
+message TopUpResponse {
+  // The person's account balance at the issuer after the top-up.
+  Money balance = 1;
+}
+
+message HolderProfile {
+  string id = 1;
+  // What people call it ("UK — Лондон").
+  string title = 2;
+  HolderData holder = 3;
+  // The organisation's fallback.
+  bool is_default = 4;
+  // Where it applies, most specific wins: a card's own choice, then a BIN,
+  // then an issuer account.
+  repeated HolderProfileScope applies_to = 5;
+  optional google.protobuf.Timestamp archived_at = 6;
+}
+
+message HolderProfileScope {
+  string issuer_account_id = 1;
+  // "" = the whole account.
+  string bin = 2;
+}
+
+message ListHolderProfilesRequest {
+  bool include_archived = 1;
+}
+
+message ListHolderProfilesResponse {
+  repeated HolderProfile profiles = 1;
+}
+
+message SaveHolderProfileRequest {
+  HolderProfile profile = 1 [(buf.validate.field).required = true];
+}
+
+message SaveHolderProfileResponse {
+  HolderProfile profile = 1;
+}
+
+message ArchiveHolderProfileRequest {
+  string id = 1 [(buf.validate.field).string.min_len = 1];
+}
+
+message ArchiveHolderProfileResponse {}

@@ -1,0 +1,80 @@
+syntax = "proto3";
+
+package cards.v2;
+
+import "buf/validate/validate.proto";
+import "cards/v2/card.proto";
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/fox1ck-org/vibe-cards/gen/cards/v2;cardsv2";
+
+// PanService is how a SERVICE presents a card somewhere, and how anyone who
+// may use a card gets its 3DS code. Scope `cards:pan`.
+//
+// A service never reads a number any other way: it asks for a single-use,
+// short-lived ticket and redeems it at once, and neither side stores the
+// answer. A person reads a number with CardService.RevealNumber, on the
+// record. The ticket and the redeem are both in the card's journal, with the
+// person the service acted for when it said.
+service PanService {
+  // IssueGrant mints the ticket. SERVICES ONLY: an API key with `cards:pan`;
+  // a person's token is refused (ERROR_REASON_NOT_ALLOWED). The card must be
+  // ACTIVE, and held by the service or by the person it acts for — or theirs,
+  // or shared with them for USE. A card the issuer last showed without
+  // details is refused before a ticket is spent on it
+  // (ERROR_REASON_CARD_UNREADABLE).
+  rpc IssueGrant(IssueGrantRequest) returns (IssueGrantResponse);
+  // Redeem exchanges the ticket for the card's details, exactly once
+  // (ERROR_REASON_GRANT_SPENT after). A page without a usable number, expiry
+  // or CVV puts the card in QUARANTINE and answers
+  // ERROR_REASON_CARD_UNREADABLE.
+  rpc Redeem(RedeemRequest) returns (RedeemResponse);
+  // WaitThreeDS returns the first 3DS code for the card delivered after
+  // `since`, waiting up to wait_seconds (clamped by the server). No code in
+  // time is an answer — an empty code — not an error. An issuer whose cards
+  // need no 3DS answers at once. The card's owner, holder, or anyone it is
+  // shared with for USE may wait; so may a service acting for them.
+  rpc WaitThreeDS(WaitThreeDSRequest) returns (WaitThreeDSResponse);
+}
+
+message IssueGrantRequest {
+  string card_id = 1 [(buf.validate.field).string.min_len = 1];
+  // Where the details are going to be presented — recorded with the grant.
+  Usage usage = 2;
+}
+
+message IssueGrantResponse {
+  // Shown exactly once; only its hash is stored.
+  string token = 1;
+  google.protobuf.Timestamp expires_at = 2;
+}
+
+message RedeemRequest {
+  string token = 1 [(buf.validate.field).string.min_len = 1];
+}
+
+// RedeemResponse is everything a payment form asks for and nothing more.
+message RedeemResponse {
+  string number = 1;
+  string exp_month = 2;
+  string exp_year = 3;
+  string cvv = 4;
+  HolderData holder = 5;
+}
+
+message WaitThreeDSRequest {
+  string card_id = 1 [(buf.validate.field).string.min_len = 1];
+  // Codes delivered before this are ignored — a code from an earlier attempt
+  // must not confirm this one.
+  google.protobuf.Timestamp since = 2;
+  // 0: the server's maximum.
+  int32 wait_seconds = 3 [(buf.validate.field).int32.gte = 0];
+}
+
+message WaitThreeDSResponse {
+  // Empty: nothing arrived in time.
+  string code = 1;
+  google.protobuf.Timestamp delivered_at = 2;
+  // Who asked for it ("Google Payments"), when the issuer says.
+  string merchant = 3;
+}

@@ -1,0 +1,9 @@
+# A COPY of vibe-cards' proto/cards/v2 (see ../README.md for the commit and
+# how to refresh it). It exists only so the conformance test can stand up a
+# real Connect server for the contract the client speaks; nothing here is
+# shipped to consumers.
+version: v2
+modules:
+  - path: .
+deps:
+  - buf.build/bufbuild/protovalidate

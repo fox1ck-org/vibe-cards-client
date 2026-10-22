@@ -1,0 +1,202 @@
+syntax = "proto3";
+
+// cards.v2 is the contract of the card model as a person thinks about it:
+// a card, whose it is, who has it now, who it is shared with, where it is
+// used, how much it may spend, what happened.
+//
+// It is served next to cards.v1 over ONE database while consumers move over;
+// then v1 is deleted whole, with no compatibility layer. What is not here on
+// purpose, and must not come back:
+//   - pools, groups, "free cards", stock to keep, "hold N in reserve": a card
+//     is issued, taken, shared, returned — nothing else;
+//   - roles beyond admin / member / viewer: an assistant is a member somebody
+//     shared "all my cards" with, with the USE right; there are no teams and
+//     no team leads;
+//   - the name of any neighbouring service: a usage is four opaque strings the
+//     client sends, nothing here knows what an ad account is;
+//   - decimal strings for money: every amount is Money{minor, currency}.
+//
+// Errors carry a google.rpc.ErrorInfo detail whose `reason` is an
+// ErrorReason value name without its prefix, in lower snake case
+// (ERROR_REASON_LIMIT_REACHED → "limit_reached") and whose `domain` is
+// "cards.v2". Clients branch on the reason, never on the message text.
+//
+// Creating methods take a client-chosen `request_id`; the same id is answered
+// with the same result (the Idempotency-Key header carries the same value
+// through the gateway).
+package cards.v2;
+
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/fox1ck-org/vibe-cards/gen/cards/v2;cardsv2";
+
+// Money is an amount in the currency's minor units (cents for USD).
+message Money {
+  int64 minor = 1;
+  // ISO 4217, upper case: "USD", "EUR".
+  string currency = 2;
+}
+
+// Decimal is an exact decimal number written as a string ("1.5", "0").
+// Used for percentages, where a float would round.
+message Decimal {
+  string value = 1;
+}
+
+// Principal is whoever acts or is acted for: a person, a service (an API key
+// of the organisation's console), or the organisation itself — the owner of
+// cards nobody personally owns. Where a principal comes from (Keycloak today,
+// an auth service tomorrow) is the shared middleware's business, not the
+// cards'.
+message Principal {
+  enum Kind {
+    KIND_UNSPECIFIED = 0;
+    KIND_PERSON = 1;
+    KIND_SERVICE = 2;
+    KIND_ORG = 3;
+  }
+  Kind kind = 1;
+  // PERSON: the subject id; SERVICE: the key's principal id; ORG: the org id.
+  string id = 2;
+  // A name to show, filled by the server on output and ignored on input.
+  string label = 3;
+}
+
+// Right is what a share lets its recipient do with a card.
+enum Right {
+  RIGHT_UNSPECIFIED = 0;
+  // See the card in the list, its operations, and its number — with a reason,
+  // written to the journal.
+  RIGHT_VIEW = 1;
+  // Everything VIEW allows, plus take the card in hand, pause it and receive
+  // its 3DS codes.
+  RIGHT_USE = 2;
+}
+
+enum CardStatus {
+  CARD_STATUS_UNSPECIFIED = 0;
+  // The issue intention is recorded and the issuer has not finished.
+  CARD_STATUS_CREATING = 1;
+  CARD_STATUS_ACTIVE = 2;
+  // Stopped. When the issuer cannot stop a card, PAUSED is the platform's own
+  // hold: the card is not handed out and not given details, and status_note
+  // says that the issuer still lets it spend.
+  CARD_STATUS_PAUSED = 3;
+  // The issuer did not show a usable number, expiry or CVV. The card is not
+  // handed out until an administrator resumes it.
+  CARD_STATUS_QUARANTINE = 4;
+  CARD_STATUS_CLOSED = 5;
+  // The issuer never finished issuing. Terminal, like CLOSED.
+  CARD_STATUS_FAILED = 6;
+}
+
+enum TxStatus {
+  TX_STATUS_UNSPECIFIED = 0;
+  TX_STATUS_PENDING = 1;
+  TX_STATUS_COMPLETED = 2;
+  TX_STATUS_DECLINED = 3;
+  TX_STATUS_REFUNDED = 4;
+}
+
+// Filter is the ONE card filter, the same in every method that selects cards
+// (List, Bulk, ListChanges, Spend.Query) and for every client — the console
+// and an integration ask the same question the same way: "cards labelled uk
+// and google, active, held by me". Every field narrows; nothing widens what
+// the caller may see. Empty fields do not filter.
+message Filter {
+  // Cards carrying ALL of these labels (names).
+  repeated string labels = 1;
+  // Principal ids; "me" is the caller.
+  repeated string owner = 2;
+  // Who holds the card now. Principal ids; "me" is the caller; "none" is a
+  // card nobody holds.
+  repeated string holder = 3;
+  repeated CardStatus status = 4;
+  // Cards shared with these principals (directly, by label or as "all of the
+  // owner's cards"). "me" is the caller.
+  repeated string shared_with = 5;
+  // Cards changed at or after this instant — what a client that pulls rather
+  // than subscribes keeps its copy fresh with.
+  google.protobuf.Timestamp updated_since = 6;
+  // Free text over the last four digits, the card's name and the owner's and
+  // holder's names.
+  string query = 7;
+  // Exactly these cards — a selection in a list.
+  repeated string card_ids = 8;
+  // Cards issued from these issuer accounts. Only meaningful when the
+  // organisation issues from its own accounts (IssueMode OWN).
+  repeated string issuer_account_ids = 9;
+}
+
+message PageRequest {
+  // 0 is the server default; the server caps it.
+  int32 page_size = 1;
+  // next_page_token of the previous page; empty for the first.
+  string page_token = 2;
+}
+
+message PageResponse {
+  // Empty on the last page.
+  string next_page_token = 1;
+  int32 total_count = 2;
+}
+
+message TimeRange {
+  google.protobuf.Timestamp from = 1;
+  // Exclusive.
+  google.protobuf.Timestamp to = 2;
+}
+
+// ErrorReason is what google.rpc.ErrorInfo.reason says, as described at the
+// top of this file. A new reason is an addition; a reason's meaning never
+// changes.
+enum ErrorReason {
+  ERROR_REASON_UNSPECIFIED = 0;
+  // The card, share, label, rule or alert does not exist or is not visible to
+  // the caller (the two are not told apart).
+  ERROR_REASON_NOT_FOUND = 1;
+  // Visible, but the caller's role or right does not allow this action.
+  ERROR_REASON_NOT_ALLOWED = 2;
+  // A limit — the card's, a rule's, the plan's — does not allow it.
+  ERROR_REASON_LIMIT_REACHED = 3;
+  // The organisation's balance does not cover it (PLATFORM issue mode).
+  ERROR_REASON_INSUFFICIENT_BALANCE = 4;
+  // The card's issuer cannot do this (no capability). The card's
+  // `capabilities` say so in advance; ErrorInfo.metadata["capability"] names
+  // the missing one.
+  ERROR_REASON_ISSUER_UNSUPPORTED = 5;
+  // The issuer refused or did not answer. Retrying may help.
+  ERROR_REASON_ISSUER_FAILED = 6;
+  // The card is not ACTIVE (paused, quarantined, closed, still creating).
+  ERROR_REASON_CARD_NOT_ACTIVE = 7;
+  // Somebody else holds the card; return or transfer comes first.
+  ERROR_REASON_HELD_BY_OTHER = 8;
+  // Taking or using the card needs it to be the caller's or shared with the
+  // caller with the USE right.
+  ERROR_REASON_NOT_SHARED_FOR_USE = 9;
+  // Showing the number needs a reason.
+  ERROR_REASON_REASON_REQUIRED = 10;
+  // The same person read the same card's number too recently.
+  ERROR_REASON_COOLDOWN = 11;
+  // The PAN ticket expired or was already redeemed.
+  ERROR_REASON_GRANT_SPENT = 12;
+  // The issuer's page for the card lacked a usable number, expiry or CVV; the
+  // card went to QUARANTINE.
+  ERROR_REASON_CARD_UNREADABLE = 13;
+  // The same request_id is still being processed; ask again later.
+  ERROR_REASON_IN_PROGRESS = 14;
+  // The organisation's plan does not include this (own issuers, top-up).
+  ERROR_REASON_NOT_IN_PLAN = 15;
+  // The top-up module is off, or its strategy does not allow a manual top-up.
+  ERROR_REASON_TOPUP_DISABLED = 16;
+  // A label with this name already exists.
+  ERROR_REASON_LABEL_EXISTS = 17;
+  // The rule's parameters do not fit its kind.
+  ERROR_REASON_RULE_INVALID = 18;
+  // No holder data (name and address) resolves for the card — neither its
+  // own, nor its BIN's, nor its issuer account's, nor the organisation's
+  // default — so a merchant that checks the address would refuse it.
+  ERROR_REASON_NO_HOLDER_PROFILE = 19;
+  // Archiving holder data a BIN or account still resolves to.
+  ERROR_REASON_PROFILE_IN_USE = 20;
+}

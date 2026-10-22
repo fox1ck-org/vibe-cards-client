@@ -3,6 +3,10 @@
 Go client for [vibe-cards](https://github.com/fox1ck-org/vibe-cards) — the
 platform's virtual-card service.
 
+> **New code uses [`/v2`](v2/README.md)** (`github.com/fox1ck-org/vibe-cards-client/v2`,
+> cards.v2: take / return / usage / share, reason-typed errors). This root
+> module is the cards.v1 client and goes away with cards.v1.
+
 ```go
 import vibecards "github.com/fox1ck-org/vibe-cards-client"
 

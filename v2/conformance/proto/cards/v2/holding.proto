@@ -1,0 +1,96 @@
+syntax = "proto3";
+
+package cards.v2;
+
+import "buf/validate/validate.proto";
+import "cards/v2/card.proto";
+import "cards/v2/common.proto";
+
+option go_package = "github.com/fox1ck-org/vibe-cards/gen/cards/v2;cardsv2";
+
+// HoldingService is "who has the card now" and "where it works".
+//
+// There is one way in: Take a card that is yours or was shared with you for
+// USE — or Issue a new one. There is no stock, no "free card", no draw from a
+// pool: a client that wants "a card labelled uk with at least $500 left"
+// asks CardService.List with that filter and takes the one it picks.
+service HoldingService {
+  // Take puts a card in the holder's hands. The card must be ACTIVE, held by
+  // nobody else (ERROR_REASON_HELD_BY_OTHER), and the holder's own or shared
+  // with the holder for USE (ERROR_REASON_NOT_SHARED_FOR_USE). Taking a card
+  // the holder already holds changes nothing and is not an error. A service
+  // takes for the person it acts on behalf of, or for itself.
+  rpc Take(TakeRequest) returns (TakeResponse);
+  // Return hands the card back to its owner: the holding ends, the usages
+  // added under it are removed, and the card's limit drops to what has
+  // already been spent (or zero) where the issuer can lower it, so a card
+  // nobody holds cannot spend even if its number leaked.
+  rpc Return(ReturnRequest) returns (ReturnResponse);
+  // Transfer hands a held card to somebody else without it moving: one
+  // holding closes and the next opens at the same instant, and the usages
+  // stay. Spend before the instant stays with the previous holder.
+  rpc Transfer(TransferRequest) returns (TransferResponse);
+  // AddUsage records where the card works. Idempotent by (card, app,
+  // external_id): adding the same usage again updates its url and label.
+  rpc AddUsage(AddUsageRequest) returns (AddUsageResponse);
+  // RemoveUsage forgets one usage, and only that one — the card and its other
+  // usages stay.
+  rpc RemoveUsage(RemoveUsageRequest) returns (RemoveUsageResponse);
+}
+
+message TakeRequest {
+  string card_id = 1 [(buf.validate.field).string.min_len = 1];
+  // Who will hold the card. Unset: the caller (or the person a service acts
+  // for). Only an admin takes for somebody else.
+  Principal holder = 2;
+  // Raises the card's limit for this holding, where the issuer can.
+  optional Limits limits = 3;
+  // Where the card will work, recorded with the take.
+  optional Usage usage = 4;
+  // As in Issue: a retry of the same request_id is the same take.
+  string request_id = 5;
+}
+
+message TakeResponse {
+  Card card = 1;
+}
+
+message ReturnRequest {
+  string card_id = 1 [(buf.validate.field).string.min_len = 1];
+  string reason = 2;
+}
+
+message ReturnResponse {
+  Card card = 1;
+}
+
+message TransferRequest {
+  string card_id = 1 [(buf.validate.field).string.min_len = 1];
+  // Required: a card held by nobody puts its spend on nobody.
+  Principal to = 2 [(buf.validate.field).required = true];
+  string reason = 3;
+}
+
+message TransferResponse {
+  Card card = 1;
+}
+
+message AddUsageRequest {
+  string card_id = 1 [(buf.validate.field).string.min_len = 1];
+  Usage usage = 2 [(buf.validate.field).required = true];
+}
+
+message AddUsageResponse {
+  Card card = 1;
+}
+
+message RemoveUsageRequest {
+  string card_id = 1 [(buf.validate.field).string.min_len = 1];
+  string app = 2 [(buf.validate.field).string.min_len = 1];
+  string external_id = 3 [(buf.validate.field).string.min_len = 1];
+  string reason = 4;
+}
+
+message RemoveUsageResponse {
+  Card card = 1;
+}
