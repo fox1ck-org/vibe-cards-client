@@ -347,7 +347,7 @@ func (f *fake) Query(_ context.Context, req *connect.Request[pb.QueryRequest]) (
 	usd := func(m int64) *pb.Money { return &pb.Money{Minor: m, Currency: "USD"} }
 	return connect.NewResponse(&pb.QueryResponse{
 		Totals: &pb.SpendTotals{Spent: usd(123456789012), Operations: 1},
-		Transactions: []*pb.Transaction{{Id: "t1", CardId: "d", Amount: usd(123456789012), IssuerFee: usd(0),
+		Transactions: []*pb.Transaction{{Id: "t1", CardId: "d", IssuerReference: "issuer-reference-fixture", Amount: usd(123456789012), IssuerFee: usd(0),
 			PlatformFee: usd(0), Merchant: "Google", Status: pb.TxStatus_TX_STATUS_COMPLETED, At: r.GetFrom()}},
 		Page: &pb.PageResponse{TotalCount: 1},
 	}), nil
@@ -510,7 +510,7 @@ func TestShareAndSpendWire(t *testing.T) {
 		}
 		if rep.Totals.Spent.Minor != 123456789012 || len(rep.Transactions) != 1 ||
 			rep.Transactions[0].Status != vibecards.TxStatusCompleted || !rep.Transactions[0].At.Equal(from) ||
-			rep.Transactions[0].ExpectedIssuerFee != nil || rep.TotalCount != 1 {
+			rep.Transactions[0].ExpectedIssuerFee != nil || rep.Transactions[0].IssuerReference != "issuer-reference-fixture" || rep.TotalCount != 1 {
 			t.Fatalf("report %+v", rep)
 		}
 	})
@@ -796,6 +796,23 @@ func TestCardSaysWhyWhatReplacedItAndHowOld(t *testing.T) {
 			if got := vibecards.CardStatusReason(n).String(); got != name {
 				t.Errorf("CardStatusReason %d: the client names it %q, the proto %q", n, got, name)
 			}
+		}
+	})
+}
+
+func (f *fake) ListAccounts(context.Context, *connect.Request[pb.ListAccountsRequest]) (*connect.Response[pb.ListAccountsResponse], error) {
+	return connect.NewResponse(&pb.ListAccountsResponse{Accounts: []*pb.IssuerAccount{{Id: "issuer-fixture", Owner: pb.IssuerAccount_OWNER_ORG, Kind: "brocard", Name: "Own account", Capabilities: []string{"issue"}, Balance: &pb.Money{Minor: 321, Currency: "USD"}, CardCount: 3, IsDefault: true}}}), nil
+}
+func TestListAccountsWire(t *testing.T) {
+	codecs(t, func(t *testing.T, numeric bool) {
+		_, client := newServer(t, numeric)
+		accounts, err := client.ListAccounts(context.Background())
+		if err != nil || len(accounts) != 1 {
+			t.Fatalf("accounts %+v, error %v", accounts, err)
+		}
+		a := accounts[0]
+		if a.ID != "issuer-fixture" || a.Owner != vibecards.IssuerOwnerOrg || a.Kind != "brocard" || a.Name != "Own account" || !a.IsDefault || a.CardCount != 3 || a.Balance == nil || a.Balance.Minor != 321 || a.RunsOutAt != nil || !slices.Equal(a.Capabilities, []string{"issue"}) {
+			t.Fatalf("account %+v", a)
 		}
 	})
 }

@@ -296,3 +296,24 @@ func (s *BulkOperationState) UnmarshalJSON(b []byte) error {
 func (s BulkOperationState) Finished() bool {
 	return s == BulkOperationDone || s == BulkOperationFailed
 }
+
+// IssuerOwner is cards.v2.IssuerAccount.Owner.
+type IssuerOwner int32
+
+const (
+	IssuerOwnerUnspecified IssuerOwner = 0
+	IssuerOwnerPlatform    IssuerOwner = 1
+	IssuerOwnerOrg         IssuerOwner = 2
+)
+
+var issuerOwnerNames = map[string]int32{"OWNER_UNSPECIFIED": 0, "OWNER_PLATFORM": 1, "OWNER_ORG": 2}
+
+func (s IssuerOwner) String() string               { return enumName(int32(s), issuerOwnerNames) }
+func (s IssuerOwner) MarshalJSON() ([]byte, error) { return encodeEnum(int32(s)) }
+func (s *IssuerOwner) UnmarshalJSON(b []byte) error {
+	n, err := decodeEnum(b, issuerOwnerNames)
+	if err == nil {
+		*s = IssuerOwner(n)
+	}
+	return err
+}
