@@ -18,8 +18,10 @@ const DefaultBaseURL = "http://localhost:8080"
 // believes them only from a service key carrying the `on_behalf` scope;
 // from anybody else they are ignored, not refused.
 const (
-	HeaderActorSub   = "X-Actor-Sub"
-	HeaderActorEmail = "X-Actor-Email"
+	HeaderActorSub    = "X-Actor-Sub"
+	HeaderActorEmail  = "X-Actor-Email"
+	HeaderOnBehalfOrg = "X-On-Behalf-Org"
+	HeaderOnBehalfSub = "X-On-Behalf-Sub"
 )
 
 // maxResponse bounds what one answer may be. A List page of a few hundred
@@ -76,9 +78,14 @@ type ctxKey int
 const (
 	keyActor ctxKey = iota
 	keyToken
+	keyOnBehalf
 )
 
 type actor struct{ sub, email string }
+type onBehalf struct {
+	org, sub string
+	active   bool
+}
 
 // OnBehalfOf marks the calls made with the returned context as made for the
 // person `sub` (a Keycloak subject; email is optional, for the journal).
@@ -90,7 +97,19 @@ type actor struct{ sub, email string }
 // acting for them. Without the scope the header is ignored and the service
 // acts as itself — and sees only what was shared with it.
 func OnBehalfOf(ctx context.Context, sub, email string) context.Context {
+	ctx = context.WithValue(ctx, keyOnBehalf, onBehalf{})
 	return context.WithValue(ctx, keyActor, actor{sub: strings.TrimSpace(sub), email: strings.TrimSpace(email)})
+}
+
+// WithOnBehalf selects the canonical service-account protocol. org is required;
+// canonicalSub may be empty for organization-scoped system work. Resolve any
+// historical external subject with the identity directory before using it here.
+// The server verifies the SA, trusted delegation and org/person permissions;
+// these headers confer no authority and never fabricate a product role.
+// This replaces legacy actor headers on this context. Use WithToken for the SA.
+func WithOnBehalf(ctx context.Context, org, canonicalSub string) context.Context {
+	ctx = context.WithValue(ctx, keyActor, actor{})
+	return context.WithValue(ctx, keyOnBehalf, onBehalf{org: org, sub: canonicalSub, active: true})
 }
 
 // WithToken makes the calls made with the returned context authenticate
@@ -131,6 +150,16 @@ func (c *Client) call(ctx context.Context, procedure string, in, out any, slow b
 		req.Header.Set(HeaderActorSub, a.sub)
 		if a.email != "" {
 			req.Header.Set(HeaderActorEmail, a.email)
+		}
+	}
+
+	if behalf, ok := ctx.Value(keyOnBehalf).(onBehalf); ok && behalf.active {
+		if behalf.org == "" {
+			return fmt.Errorf("on-behalf organization is required")
+		}
+		req.Header.Set(HeaderOnBehalfOrg, behalf.org)
+		if behalf.sub != "" {
+			req.Header.Set(HeaderOnBehalfSub, behalf.sub)
 		}
 	}
 
