@@ -32,15 +32,15 @@ func (c *Client) ValidateRead(ctx context.Context, token string) error {
 // ProductChange is an identity-only notification. Obtain details with the
 // ordinary authorized API. Operation is created, updated or deleted.
 type ProductChange struct {
-	ResourceID string `json:"resourceId"`
-	CardID     string `json:"cardId"`
+	ResourceID string `json:"resource_id"`
+	CardID     string `json:"card_id"`
 	Operation  string `json:"operation"`
 }
 type ProductEvent struct {
 	ID      string        `json:"id"`
 	Type    string        `json:"type"`
 	Version int32         `json:"version"`
-	OrgID   string        `json:"orgId"`
+	OrgID   string        `json:"org_id"`
 	Source  string        `json:"source"`
 	At      time.Time     `json:"at"`
 	Data    ProductChange `json:"data"`

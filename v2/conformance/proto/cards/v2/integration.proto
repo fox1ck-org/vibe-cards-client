@@ -61,7 +61,7 @@ message ProductEvent {
   // cards.card.v1, cards.holding.v1, cards.transaction.v1, cards.alert.v1.
   string type = 2;
   int32 version = 3;
-  string org_id = 4;
+  string org_id = 4 [json_name = "org_id"];
   string source = 5;
   google.protobuf.Timestamp at = 6;
   ProductChange data = 7;
@@ -72,7 +72,7 @@ message ProductEvent {
 // for an aggregate alert. operation is created, updated or deleted. A deleted
 // resource may no longer be readable; this notification contains no old state.
 message ProductChange {
-  string resource_id = 1;
-  string card_id = 2;
+  string resource_id = 1 [json_name = "resource_id"];
+  string card_id = 2 [json_name = "card_id"];
   string operation = 3;
 }

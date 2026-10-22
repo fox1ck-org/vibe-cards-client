@@ -306,7 +306,7 @@ type ProductEvent struct {
 	// cards.card.v1, cards.holding.v1, cards.transaction.v1, cards.alert.v1.
 	Type          string                 `protobuf:"bytes,2,opt,name=type,proto3" json:"type,omitempty"`
 	Version       int32                  `protobuf:"varint,3,opt,name=version,proto3" json:"version,omitempty"`
-	OrgId         string                 `protobuf:"bytes,4,opt,name=org_id,json=orgId,proto3" json:"org_id,omitempty"`
+	OrgId         string                 `protobuf:"bytes,4,opt,name=org_id,proto3" json:"org_id,omitempty"`
 	Source        string                 `protobuf:"bytes,5,opt,name=source,proto3" json:"source,omitempty"`
 	At            *timestamppb.Timestamp `protobuf:"bytes,6,opt,name=at,proto3" json:"at,omitempty"`
 	Data          *ProductChange         `protobuf:"bytes,7,opt,name=data,proto3" json:"data,omitempty"`
@@ -399,8 +399,8 @@ func (x *ProductEvent) GetData() *ProductChange {
 // resource may no longer be readable; this notification contains no old state.
 type ProductChange struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	ResourceId    string                 `protobuf:"bytes,1,opt,name=resource_id,json=resourceId,proto3" json:"resource_id,omitempty"`
-	CardId        string                 `protobuf:"bytes,2,opt,name=card_id,json=cardId,proto3" json:"card_id,omitempty"`
+	ResourceId    string                 `protobuf:"bytes,1,opt,name=resource_id,proto3" json:"resource_id,omitempty"`
+	CardId        string                 `protobuf:"bytes,2,opt,name=card_id,proto3" json:"card_id,omitempty"`
 	Operation     string                 `protobuf:"bytes,3,opt,name=operation,proto3" json:"operation,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -477,19 +477,18 @@ const file_cards_v2_integration_proto_rawDesc = "" +
 	"\x1eListIntegrationChangesResponse\x12.\n" +
 	"\x06events\x18\x01 \x03(\v2\x16.cards.v2.ProductEventR\x06events\x12\x1f\n" +
 	"\vnext_cursor\x18\x02 \x01(\tR\n" +
-	"nextCursor\"\xd4\x01\n" +
+	"nextCursor\"\xd5\x01\n" +
 	"\fProductEvent\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
 	"\x04type\x18\x02 \x01(\tR\x04type\x12\x18\n" +
-	"\aversion\x18\x03 \x01(\x05R\aversion\x12\x15\n" +
-	"\x06org_id\x18\x04 \x01(\tR\x05orgId\x12\x16\n" +
+	"\aversion\x18\x03 \x01(\x05R\aversion\x12\x16\n" +
+	"\x06org_id\x18\x04 \x01(\tR\x06org_id\x12\x16\n" +
 	"\x06source\x18\x05 \x01(\tR\x06source\x12*\n" +
 	"\x02at\x18\x06 \x01(\v2\x1a.google.protobuf.TimestampR\x02at\x12+\n" +
-	"\x04data\x18\a \x01(\v2\x17.cards.v2.ProductChangeR\x04data\"g\n" +
-	"\rProductChange\x12\x1f\n" +
-	"\vresource_id\x18\x01 \x01(\tR\n" +
-	"resourceId\x12\x17\n" +
-	"\acard_id\x18\x02 \x01(\tR\x06cardId\x12\x1c\n" +
+	"\x04data\x18\a \x01(\v2\x17.cards.v2.ProductChangeR\x04data\"i\n" +
+	"\rProductChange\x12 \n" +
+	"\vresource_id\x18\x01 \x01(\tR\vresource_id\x12\x18\n" +
+	"\acard_id\x18\x02 \x01(\tR\acard_id\x12\x1c\n" +
 	"\toperation\x18\x03 \x01(\tR\toperation2\x8b\x02\n" +
 	"\x12IntegrationService\x12D\n" +
 	"\tBeginRead\x12\x1a.cards.v2.BeginReadRequest\x1a\x1b.cards.v2.BeginReadResponse\x12M\n" +
