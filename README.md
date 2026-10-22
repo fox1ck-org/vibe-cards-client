@@ -38,3 +38,10 @@ is available only through historical tags; current consumers import `/v2`.
 Services can download this contract in CI without access to a private sibling
 repository. It contains protocol types and HTTP paths, never credentials.
 The service still requires authentication.
+
+## Deployment configuration
+
+`DefaultBaseURL` now names a local endpoint (`http://localhost:8080`), removing
+private deployment topology from the public client. Configure the service URL
+explicitly. `New` still returns nil for an empty URL. Existing release tags and
+history are unchanged.
