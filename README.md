@@ -45,3 +45,15 @@ The service still requires authentication.
 private deployment topology from the public client. Configure the service URL
 explicitly. `New` still returns nil for an empty URL. Existing release tags and
 history are unchanged.
+
+The additive integration methods coordinate complete paginated reads: call
+`BeginRead`, collect all pages and related metadata, then `ValidateRead` before
+publishing aggregates or committing a ledger. On `ErrReadChanged` or
+`ErrReadExpired`, discard the entire collection and retry a bounded number of
+times. Tokens never grant access and remain bound to the same caller/authority.
+
+`ListProductChanges` reads the retained product journal, separate from
+`ListChanges` (the UI card audit timeline). Save its cursor even for an empty
+filtered page. `ErrCursorInvalidated` requires a complete bootstrap. The four
+identity-only event types carry stable event IDs for deduplication; obtain current
+resource details through the ordinary authorized API.

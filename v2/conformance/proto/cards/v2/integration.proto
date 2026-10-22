@@ -1,0 +1,78 @@
+syntax = "proto3";
+
+package cards.v2;
+
+import "buf/validate/validate.proto";
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/fox1ck-org/vibe-cards/gen/cards/v2;cardsv2";
+
+// IntegrationService coordinates complete reads and durable change consumption.
+// Every call uses the same current organisation and resource access rules as the
+// ordinary services. A read token or change cursor never grants access.
+service IntegrationService {
+  // Begin before reading any pages or related metadata. Collect everything,
+  // ValidateRead, and only then publish derived results. There is no long-lived
+  // database transaction and no lock on changes after successful validation.
+  rpc BeginRead(BeginReadRequest) returns (BeginReadResponse);
+  // A changed or expired read returns Aborted: discard the complete collection
+  // and retry from BeginRead with a bounded retry limit. A token from another
+  // principal/actor/authorization context is not found.
+  rpc ValidateRead(ValidateReadRequest) returns (ValidateReadResponse);
+  // Retained product journal, distinct from CardService.ListChanges (the UI's
+  // per-card audit timeline). Always persist next_cursor, even for an empty
+  // filtered page. Tokens are opaque server-stored IDs, bound to caller and
+  // current authorization. A visibility change invalidates a member cursor
+  // with FailedPrecondition/cursor_invalidated: perform a complete bootstrap.
+  // Cursors expire after seven unused days. Current card visibility is checked
+  // for every event; a
+  // revoked share grants no access to old events. Org readers can also receive
+  // deleted-card tombstones and aggregate alerts. Ordinary readers receive
+  // only events attached to a currently visible card.
+  rpc ListChanges(ListIntegrationChangesRequest) returns (ListIntegrationChangesResponse);
+}
+
+message BeginReadRequest {}
+message BeginReadResponse {
+  string token = 1;
+  google.protobuf.Timestamp expires_at = 2;
+}
+message ValidateReadRequest {
+  string token = 1 [(buf.validate.field).string.min_len = 1];
+}
+message ValidateReadResponse {}
+
+message ListIntegrationChangesRequest {
+  string since = 1 [(buf.validate.field).string.max_len = 4096];
+  // 0 uses 100; otherwise 1..1000 scanned events, before visibility filtering.
+  int32 limit = 2 [(buf.validate.field).int32 = {gte: 0, lte: 1000}];
+}
+message ListIntegrationChangesResponse {
+  repeated ProductEvent events = 1;
+  string next_cursor = 2;
+}
+
+// The bus uses the common JSON envelope with these fields. Data is deliberately
+// an identity-only change notification: read current state with the ordinary
+// authorized API. No PAN, provider credentials, personal labels or holder PII.
+// Consumers deduplicate id; delivery may repeat. Resource IDs are opaque.
+message ProductEvent {
+  string id = 1;
+  // cards.card.v1, cards.holding.v1, cards.transaction.v1, cards.alert.v1.
+  string type = 2;
+  int32 version = 3;
+  string org_id = 4;
+  string source = 5;
+  google.protobuf.Timestamp at = 6;
+  ProductChange data = 7;
+}
+
+// Payload schema shared by all four version-one event types. resource_id is
+// respectively a card, holding, transaction or alert ID. card_id is empty only
+// for an aggregate alert. operation is created, updated or deleted. A deleted
+// resource may no longer be readable; this notification contains no old state.
+message ProductChange {
+  string resource_id = 1;
+  string card_id = 2;
+  string operation = 3;
+}
