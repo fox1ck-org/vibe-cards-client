@@ -1,113 +1,40 @@
 # vibe-cards-client
 
-Go client for [vibe-cards](https://github.com/fox1ck-org/vibe-cards) — the
-platform's virtual-card service.
-
-> **New code uses [`/v2`](v2/README.md)** (`github.com/fox1ck-org/vibe-cards-client/v2`,
-> cards.v2: take / return / usage / share, reason-typed errors). This root
-> module is the cards.v1 client and goes away with cards.v1.
+Go client for [vibe-cards](https://github.com/fox1ck-org/vibe-cards), using the
+cards.v2 API. The supported module lives in [`v2/`](v2/README.md) and depends
+only on the Go standard library.
 
 ```go
-import vibecards "github.com/fox1ck-org/vibe-cards-client"
+import vibecards "github.com/fox1ck-org/vibe-cards-client/v2"
 
 cards := vibecards.New(os.Getenv("VIBE_CARDS_URL"), os.Getenv("VIBE_CARDS_API_KEY"))
 ```
 
-`New` returns **nil** when the URL or key is empty, and every method is
-nil-receiver safe: a service without the integration degrades instead of
-panicking.
+See the [client guide](v2/README.md) for taking and returning cards, usages,
+sharing, PAN tickets, 3DS, and typed errors. The repository root contains no Go
+module; run Go commands from `v2/` or `v2/conformance/`.
 
-## What it does
+## Checks
 
-Takes a card out of a pool for somebody (`DrawCard`) and hands it back
-(`ReleaseClaim` for one subject, `ReleaseHolding` for the whole holding), claims a specific card for a subject (`AssignCard`), reads
-what a subject holds (`ListAssignments`, `ListHoldings`), and — for a service that is about to present
-a card to a payment form — exchanges a **single-use, two-minute ticket** for its
-details (`CardDetailsFor`).
-
-### Draw, don't issue
-
-```go
-out, err := cards.DrawCard(ctx, vibecards.DrawInput{
-    HolderUserSub: ownerSub,                     // who will be spending
-    SubjectApp:    vibecards.SubjectAppAccounts, // what it funds
-    SubjectType:   vibecards.SubjectTypeAccount,
-    SubjectID:     accountID.String(),
-})
-if out.NoStock() {
-    // The pool is empty. Wait for it to be topped up — this is a supply
-    // problem, not a failure of the request.
-}
+```sh
+cd v2
+go vet ./...
+go test ./...
+cd conformance
+go test ./...
 ```
 
-`DrawCard` hands over a card the estate already owns; `RequestCard` **issues** a
-new one at the provider and costs a fee every time. Prefer the draw.
+Conformance tests run against generated cards.v2 Connect handlers in a separate
+module, so protobuf and Connect dependencies never enter consumers' module graphs.
 
-A card nobody returns is a card the estate pays to replace, so release it when
-the subject is finished with it — a dead account, a replaced funding source, a
-handover:
+## Releases
 
-```go
-_, err := cards.ReleaseClaim(ctx, assignmentID, "account died")
-```
-
-`ReleaseClaim` returns the claim your subject made and hands the card back only
-when nothing else was funded from it. Reach for `ReleaseHolding` only when the
-**holder** is done with the card: it revokes every claim under the holding,
-including the ones another of that person's subjects is spending through.
-
-Releasing also drops the card's limit to zero once nobody is left on it, which
-is what makes a leaked number from a card sitting in stock worth nothing.
-
-### A buyer's own pool
-
-A service acting for a person can open and run a pool that is *theirs* — funded
-from their own provider link — rather than drawing on the estate's shared stock:
-
-```go
-groups, err := cards.ListGroups(ctx, vibecards.ListGroupsInput{OwnerSub: buyerSub})
-if len(groups) == 0 {
-    g, err := cards.CreateGroup(ctx, vibecards.CreateGroupInput{
-        Name: "buyer pool", OwnerSub: buyerSub,
-        SharingMode: vibecards.SharingModeExclusive,
-        DefaultLimitCents: 30000, AutoIssue: true, MinAvailable: 1, MaxTotal: 5,
-    })
-}
-// Let an assistant see (not draw from) the pool; revoke when they leave.
-grant, err := cards.GrantGroupAccess(ctx, vibecards.GrantGroupAccessInput{
-    GroupID: g.ID, OwnerSub: buyerSub, SubjectID: assistantSub, CanDraw: false,
-})
-err = cards.RevokeGroupAccess(ctx, vibecards.RevokeGroupAccessInput{GrantID: grant.ID, OwnerSub: buyerSub})
-```
-
-`GrantGroupAccess` only ever grants a **person**; team grants are a console
-decision. `ListGroupGrants` reads who is on a pool (revoked rows on request).
-Then draw from it with `DrawCard{GroupID: g.ID, HolderUserSub: buyerSub}`.
-
-The details are never persisted by either side. They exist for the length of one
-outbound request. A person has no step in which they need them: `IssuePANGrant`
-refuses a JWT caller outright and requires an API key carrying the `pan:redeem`
-scope.
+Keep the `v2/` major-version directory and publish root tags `v2.X.Y` (not
+`v2/v2.X.Y`). Existing published tags are immutable. The retired root client
+is available only through historical tags; current consumers import `/v2`.
 
 ## Why this repository is public
 
-A client is imported by services whose CI cannot read a private sibling repo. A
-GitHub deploy key is scoped to one repository and cannot be shared, and two keys
-in one agent do not work — ssh offers whichever the server accepts first and the
-other repository comes back "not found". `vibe-proxy-client` is public for the
-same reason.
-
-Nothing here is a secret: protocol types and HTTP paths. Reaching vibe-cards
-still needs a `vck_` key against a private endpoint.
-
-## Releasing
-
-Tag in lockstep with the vibe-cards API it speaks to:
-
-```
-git tag v0.2.0 && git push origin v0.2.0
-```
-
-`ListCardTransactions` reads a concrete card's recorded charges in a bounded
-window (100 per page). Authorize the subject and verify its assignment first.
-It preserves decimal amounts and optional provider fees, and never returns PANs.
+Services can download this contract in CI without access to a private sibling
+repository. It contains protocol types and HTTP paths, never credentials.
+The service still requires authentication.

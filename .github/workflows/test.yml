@@ -1,0 +1,26 @@
+name: Client checks
+on:
+  push:
+    branches: [main]
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: vibe-runner-go-hz
+    env:
+      GOWORK: "off"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: v2/conformance/go.mod
+          cache-dependency-path: v2/conformance/go.sum
+      - name: Check client
+        working-directory: v2
+        run: |
+          go vet ./...
+          go test ./...
+      - name: Check wire conformance
+        working-directory: v2/conformance
+        run: go test ./...
