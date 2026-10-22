@@ -136,7 +136,7 @@ func TestHeadersCarryTokenAndActor(t *testing.T) {
 	defer srv.Close()
 	c := New(srv.URL+"/", "vck_service")
 
-	ctx := OnBehalfOf(context.Background(), "sub-1", "a@b.c")
+	ctx := OnBehalfOf(context.Background(), "sub-1", "person@example.test")
 	if _, err := c.Get(ctx, "c1"); err != nil {
 		t.Fatal(err)
 	}
@@ -145,7 +145,7 @@ func TestHeadersCarryTokenAndActor(t *testing.T) {
 	}
 	h := rec.headers
 	if h[0].Get("Authorization") != "Bearer vck_service" || h[0].Get(HeaderActorSub) != "sub-1" ||
-		h[0].Get(HeaderActorEmail) != "a@b.c" || h[0].Get("Content-Type") != "application/json" {
+		h[0].Get(HeaderActorEmail) != "person@example.test" || h[0].Get("Content-Type") != "application/json" {
 		t.Fatalf("first: %v", h[0])
 	}
 	if h[1].Get("Authorization") != "Bearer jwt-of-person" || h[1].Get(HeaderActorSub) != "" {

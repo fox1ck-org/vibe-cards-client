@@ -405,8 +405,8 @@ func codecs(t *testing.T, fn func(t *testing.T, numeric bool)) {
 func TestTakeUsePresentConfirmReturn(t *testing.T) {
 	codecs(t, func(t *testing.T, numeric bool) {
 		f, client := newServer(t, numeric)
-		ctx := vibecards.OnBehalfOf(context.Background(), "sub-buyer", "buyer@example.com")
-		usage := vibecards.Usage{App: "vibe-accounts", ExternalID: "acc-1", URL: "https://accounts/acc-1", Label: "UK-01"}
+		ctx := vibecards.OnBehalfOf(context.Background(), "sub-buyer", "buyer@example.test")
+		usage := vibecards.Usage{App: "vibe-accounts", ExternalID: "acc-1", URL: "https://accounts.example.test/acc-1", Label: "UK-01"}
 
 		// a: somebody else wins the race; b: paused; c: wrong label → d.
 		card, err := client.TakeFirst(ctx, vibecards.TakeFirstInput{

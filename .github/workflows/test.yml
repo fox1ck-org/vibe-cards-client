@@ -7,7 +7,8 @@ permissions:
   contents: read
 jobs:
   test:
-    runs-on: vibe-runner-go-hz
+    # hosted-runner-allowed: public stdlib client; owner approved 2026-10-22
+    runs-on: ubuntu-latest
     env:
       GOWORK: "off"
     steps:
