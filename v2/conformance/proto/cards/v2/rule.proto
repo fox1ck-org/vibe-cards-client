@@ -1,0 +1,285 @@
+syntax = "proto3";
+
+package cards.v2;
+
+import "buf/validate/validate.proto";
+import "cards/v2/common.proto";
+import "google/protobuf/duration.proto";
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/fox1ck-org/vibe-cards/gen/cards/v2;cardsv2";
+
+// RuleService is protection: rules that watch spend and alerts they raise.
+//
+// A rule reads as a sentence: "if, on each card labelled uk, more than $1 000
+// is spent in a day, then at 90% notify and at 100% pause". A day's limit and
+// the autolimit are rule templates, not card fields; the only limits on a
+// card are what its issuer holds (Card.limits).
+//
+// A rule targets a card, a label, a person (their cards) or the whole
+// organisation — no teams. An alert goes to the organisation's channels. A
+// pause made by a rule is lifted by resolving its alert.
+//
+// admin: every rule; member: rules on their own cards; viewer: reads.
+service RuleService {
+  rpc ListRules(ListRulesRequest) returns (ListRulesResponse);
+  // SaveRule creates a rule (empty id) or replaces one.
+  rpc SaveRule(SaveRuleRequest) returns (SaveRuleResponse);
+  rpc DeleteRule(DeleteRuleRequest) returns (DeleteRuleResponse);
+  // PreviewRule runs a rule over the past without saving it: how often it
+  // would have fired, on which cards, how many pauses.
+  rpc PreviewRule(PreviewRuleRequest) returns (PreviewRuleResponse);
+  // ListTemplates is the starting points of the rule dialog, with defaults.
+  rpc ListTemplates(ListTemplatesRequest) returns (ListTemplatesResponse);
+
+  rpc ListAlerts(ListAlertsRequest) returns (ListAlertsResponse);
+  // AcknowledgeAlert says somebody is looking. The pause, if any, stays.
+  rpc AcknowledgeAlert(AcknowledgeAlertRequest) returns (AcknowledgeAlertResponse);
+  // ResolveAlert closes the alert and, with resume_cards, lifts the pauses
+  // the rule made.
+  rpc ResolveAlert(ResolveAlertRequest) returns (ResolveAlertResponse);
+}
+
+enum RuleKind {
+  RULE_KIND_UNSPECIFIED = 0;
+  // Spend in a calendar day (the organisation's time zone). Params: amount.
+  RULE_KIND_DAILY_LIMIT = 1;
+  // One operation larger than. Params: amount.
+  RULE_KIND_TXN_LIMIT = 2;
+  // Spend in a sliding window. Params: amount + window.
+  RULE_KIND_PERIOD_SUM = 3;
+  // Operations in a sliding window. Params: count + window.
+  RULE_KIND_VELOCITY = 4;
+  // Declines in a sliding window. Params: count + window.
+  RULE_KIND_DECLINES = 5;
+  // An operation from a country not on the list. Params: countries.
+  RULE_KIND_COUNTRIES = 6;
+  // An operation at a merchant category not allowed. Params: mcc.
+  RULE_KIND_MCC = 7;
+  // Keeps a held card's issuer limit near its recent spend. Params: auto_limit.
+  RULE_KIND_AUTO_LIMIT = 8;
+}
+
+enum RuleAction {
+  RULE_ACTION_UNSPECIFIED = 0;
+  RULE_ACTION_NOTIFY = 1;
+  RULE_ACTION_PAUSE = 2;
+}
+
+message RuleTarget {
+  enum Kind {
+    KIND_UNSPECIFIED = 0;
+    // Every card of the organisation.
+    KIND_ORG = 1;
+    // The cards in card_ids.
+    KIND_CARDS = 2;
+    // Every card carrying `label`.
+    KIND_LABEL = 3;
+    // Every card `person_id` owns or holds.
+    KIND_PERSON = 4;
+  }
+  Kind kind = 1;
+  repeated string card_ids = 2;
+  string label = 3;
+  string person_id = 4;
+  // true: the threshold applies to each card on its own; false: to the
+  // target's cards together.
+  bool per_card = 5;
+  // KIND_PERSON: the person with their name, filled by the server on read
+  // (person_id is what a client writes).
+  optional Principal person = 6;
+}
+
+// RuleStep is one "at N% do X". Kinds without a percentage (countries, MCC)
+// have one step at 100.
+message RuleStep {
+  int32 at_percent = 1 [(buf.validate.field).int32 = {
+    gte: 1
+    lte: 100
+  }];
+  RuleAction action = 2;
+}
+
+message AmountParams {
+  Money amount = 1;
+  // PERIOD_SUM only.
+  google.protobuf.Duration window = 2;
+}
+
+message CountParams {
+  int32 count = 1 [(buf.validate.field).int32.gt = 0];
+  google.protobuf.Duration window = 2;
+}
+
+message CountryParams {
+  // ISO 3166-1 alpha-2; operations from anywhere else trigger.
+  repeated string allowed = 1 [(buf.validate.field).repeated.min_items = 1];
+}
+
+message MccParams {
+  // When set, only these categories are allowed.
+  repeated string allowed = 1;
+  // These categories trigger.
+  repeated string blocked = 2;
+}
+
+message AutoLimitParams {
+  // The limit follows this many average days of spend ("2" = twice the
+  // average day).
+  Decimal days_of_spend = 1;
+  // Never below this.
+  Money floor = 2;
+}
+
+message Rule {
+  string id = 1;
+  string name = 2;
+  RuleKind kind = 3;
+  RuleTarget target = 4;
+  oneof params {
+    AmountParams amount = 5;
+    CountParams count = 6;
+    CountryParams countries = 7;
+    MccParams mcc = 8;
+    AutoLimitParams auto_limit = 9;
+  }
+  repeated RuleStep steps = 10;
+  bool enabled = 11;
+  // Filled by the server.
+  Principal created_by = 12;
+  google.protobuf.Timestamp created_at = 13;
+  google.protobuf.Timestamp updated_at = 14;
+}
+
+// RuleProgress is how close a rule is to firing on its busiest card, for
+// the "$910 of $1 000" line.
+message RuleProgress {
+  // The busiest card of a per-card rule; empty when the rule sums its
+  // target's cards together (per_card = false).
+  string card_id = 1;
+  // An amount or a count, as the kind measures.
+  optional Money used_amount = 2;
+  int32 used_count = 3;
+  int32 percent = 4;
+}
+
+message RuleWithProgress {
+  Rule rule = 1;
+  optional RuleProgress progress = 2;
+  int32 open_alerts = 3;
+}
+
+message ListRulesRequest {
+  // Rules that reach this card, whichever way.
+  string card_id = 1;
+  RuleKind kind = 2;
+}
+
+message ListRulesResponse {
+  repeated RuleWithProgress rules = 1;
+}
+
+message SaveRuleRequest {
+  Rule rule = 1 [(buf.validate.field).required = true];
+}
+
+message SaveRuleResponse {
+  Rule rule = 1;
+}
+
+message DeleteRuleRequest {
+  string id = 1 [(buf.validate.field).string.min_len = 1];
+}
+
+message DeleteRuleResponse {}
+
+message PreviewRuleRequest {
+  Rule rule = 1 [(buf.validate.field).required = true];
+  // How far back. Unset: 7 days.
+  google.protobuf.Duration lookback = 2;
+}
+
+message PreviewRuleResponse {
+  int32 fired = 1;
+  int32 cards = 2;
+  int32 pauses = 3;
+  // The first few, for "одна пауза (•9645, 18 окт)".
+  repeated Alert examples = 4;
+}
+
+message RuleTemplate {
+  RuleKind kind = 1;
+  string title = 2;
+  string description = 3;
+  // A ready rule with sensible defaults; the dialog starts from it.
+  Rule defaults = 4;
+}
+
+message ListTemplatesRequest {}
+
+message ListTemplatesResponse {
+  repeated RuleTemplate templates = 1;
+}
+
+enum AlertStatus {
+  ALERT_STATUS_UNSPECIFIED = 0;
+  ALERT_STATUS_OPEN = 1;
+  ALERT_STATUS_ACKNOWLEDGED = 2;
+  ALERT_STATUS_RESOLVED = 3;
+}
+
+message Alert {
+  string id = 1;
+  string rule_id = 2;
+  string rule_name = 3;
+  RuleKind kind = 4;
+  AlertStatus status = 5;
+  string card_id = 6;
+  string card_last4 = 7;
+  // Who held the card when it fired.
+  optional Principal holder = 8;
+  // What was seen, in words ("3 отказа подряд за 10 минут").
+  string summary = 9;
+  // The amount that tripped it, where there is one.
+  optional Money amount = 10;
+  string merchant = 11;
+  string country = 12;
+  RuleAction action = 13;
+  // The rule paused cards, and they are still paused.
+  int32 cards_paused = 14;
+  google.protobuf.Timestamp at = 15;
+  optional Principal acknowledged_by = 16;
+  optional google.protobuf.Timestamp acknowledged_at = 17;
+  optional Principal resolved_by = 18;
+  optional google.protobuf.Timestamp resolved_at = 19;
+}
+
+message ListAlertsRequest {
+  repeated AlertStatus status = 1;
+  string card_id = 2;
+  string rule_id = 3;
+  PageRequest page = 4;
+}
+
+message ListAlertsResponse {
+  repeated Alert alerts = 1;
+  PageResponse page = 2;
+}
+
+message AcknowledgeAlertRequest {
+  string id = 1 [(buf.validate.field).string.min_len = 1];
+}
+
+message AcknowledgeAlertResponse {
+  Alert alert = 1;
+}
+
+message ResolveAlertRequest {
+  string id = 1 [(buf.validate.field).string.min_len = 1];
+  // Lift the pauses this alert's rule made.
+  bool resume_cards = 2;
+}
+
+message ResolveAlertResponse {
+  Alert alert = 1;
+}

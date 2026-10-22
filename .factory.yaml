@@ -14,6 +14,7 @@ specs: { required: false, paths: [docs/specs/] }
 
 worktree_setup:
   - go mod download
+  - cd v2/conformance && go mod download
 
 # `go test` IS here, unlike in the services: these tests are pure and need
 # nothing the workspace has not got, so leaving them out would drop the only
@@ -25,3 +26,11 @@ worktree_checks:
     run: go vet ./...
   - name: test
     run: go test ./...
+  # cards.v2: the client module (stdlib only) and its conformance module,
+  # which runs it against handlers generated from the cards.v2 proto.
+  - name: v2-vet
+    run: cd v2 && go vet ./...
+  - name: v2-test
+    run: cd v2 && go test ./...
+  - name: v2-conformance
+    run: cd v2/conformance && go test ./...

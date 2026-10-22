@@ -1,0 +1,66 @@
+syntax = "proto3";
+
+package cards.v2;
+
+import "buf/validate/validate.proto";
+
+option go_package = "github.com/fox1ck-org/vibe-cards/gen/cards/v2;cardsv2";
+
+// LabelService is the organisation's labels. A label is a filter in the
+// list, a grouping of spend, a rule's target, a thing to share and an
+// integration's filter ("labels=uk,google"). Cards carry labels by name
+// (Card.labels, CardService.Update); this service owns the names.
+//
+// A member creates labels and puts them on their cards; renaming and deleting
+// is an admin's — a label is the organisation's, not one person's.
+service LabelService {
+  rpc ListLabels(ListLabelsRequest) returns (ListLabelsResponse);
+  rpc CreateLabel(CreateLabelRequest) returns (CreateLabelResponse);
+  // RenameLabel renames everywhere it is used: cards, shares, rules.
+  rpc RenameLabel(RenameLabelRequest) returns (RenameLabelResponse);
+  // DeleteLabel takes the label off every card and removes the shares and
+  // rules that target it.
+  rpc DeleteLabel(DeleteLabelRequest) returns (DeleteLabelResponse);
+}
+
+message Label {
+  string id = 1;
+  string name = 2;
+  // Cards the caller can see that carry it.
+  int32 card_count = 3;
+}
+
+message ListLabelsRequest {}
+
+message ListLabelsResponse {
+  repeated Label labels = 1;
+}
+
+message CreateLabelRequest {
+  string name = 1 [(buf.validate.field).string = {
+    min_len: 1
+    max_len: 64
+  }];
+}
+
+message CreateLabelResponse {
+  Label label = 1;
+}
+
+message RenameLabelRequest {
+  string id = 1 [(buf.validate.field).string.min_len = 1];
+  string name = 2 [(buf.validate.field).string = {
+    min_len: 1
+    max_len: 64
+  }];
+}
+
+message RenameLabelResponse {
+  Label label = 1;
+}
+
+message DeleteLabelRequest {
+  string id = 1 [(buf.validate.field).string.min_len = 1];
+}
+
+message DeleteLabelResponse {}

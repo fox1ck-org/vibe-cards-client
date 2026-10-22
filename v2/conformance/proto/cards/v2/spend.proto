@@ -1,0 +1,128 @@
+syntax = "proto3";
+
+package cards.v2;
+
+import "buf/validate/validate.proto";
+import "cards/v2/common.proto";
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/fox1ck-org/vibe-cards/gen/cards/v2;cardsv2";
+
+// SpendService answers every "how much, where, by whom" with one query:
+// totals, groups and a series over the cards a Filter selects, or the
+// operations themselves when nothing is grouped. The totals equal the sum of
+// the operations they cover — there is no second ledger to disagree with.
+//
+// Visibility is CardService's: only cards the caller can see are counted.
+service SpendService {
+  rpc Query(QueryRequest) returns (QueryResponse);
+}
+
+enum GroupBy {
+  // No grouping: the response carries the operations, paged.
+  GROUP_BY_UNSPECIFIED = 0;
+  GROUP_BY_CARD = 1;
+  // The holder at the time of the operation; a service that acted for a
+  // person counts as the person.
+  GROUP_BY_PERSON = 2;
+  // The issuer account (OWN mode only; PLATFORM groups everything as one).
+  GROUP_BY_ISSUER = 3;
+  GROUP_BY_MERCHANT = 4;
+  // An operation on a card with two labels counts in both.
+  GROUP_BY_LABEL = 5;
+  // Usage.app of the card at the time.
+  GROUP_BY_USAGE = 6;
+}
+
+// Buckets start at local midnight (DAY) or on the local hour (HOUR) in the
+// organisation's report_time_zone (IssuingService.GetSettings), and the series
+// has one point per bucket of the range, zero where nothing was spent.
+enum Bucket {
+  // No series.
+  BUCKET_UNSPECIFIED = 0;
+  BUCKET_HOUR = 1;
+  BUCKET_DAY = 2;
+}
+
+message QueryRequest {
+  Filter filter = 1;
+  TimeRange range = 2 [(buf.validate.field).required = true];
+  // Empty: every status. The statuses select the operations FIRST; every
+  // total, group, point and page is computed over what they kept. So
+  // [COMPLETED] answers refunds = 0 and declines = 0, and [DECLINED] answers
+  // spent = 0 with every decline counted.
+  repeated TxStatus tx_status = 3;
+  GroupBy group_by = 4;
+  Bucket bucket = 5;
+  // The same totals over the range just before, for "+12% к прошлой неделе".
+  bool compare_previous = 6;
+  // Operations page when group_by is unset.
+  PageRequest page = 7;
+}
+
+message QueryResponse {
+  SpendTotals totals = 1;
+  optional SpendTotals previous = 2;
+  repeated SpendGroup groups = 3;
+  repeated SpendPoint series = 4;
+  repeated Transaction transactions = 5;
+  PageResponse page = 6;
+}
+
+message SpendTotals {
+  // completed + pending − refunded: what the cards actually spent. A decline
+  // spends nothing.
+  Money spent = 1;
+  Money issuer_fees = 2;
+  // What the platform charged (PLATFORM mode; zero on a zero tariff).
+  Money platform_fees = 3;
+  // Every operation counted, declines and refunds included.
+  int32 operations = 4;
+  // Operations in REFUNDED.
+  int32 refunds = 5;
+  // Operations in DECLINED.
+  int32 declines = 6;
+  // Cards with at least one operation.
+  int32 cards = 7;
+}
+
+message SpendGroup {
+  // The card id, principal id, issuer account id, merchant, label or app;
+  // empty for "none" (a card nobody held).
+  string key = 1;
+  // What to show: "•4242" for a card, the person's name for a person, the
+  // account's, label's or merchant's name otherwise.
+  string label = 2;
+  SpendTotals totals = 3;
+  // GROUP_BY_PERSON only: whether the key is a person or a service
+  // (KIND_UNSPECIFIED for "none").
+  Principal.Kind principal_kind = 4;
+}
+
+message SpendPoint {
+  google.protobuf.Timestamp at = 1;
+  Money spent = 2;
+}
+
+// Transaction is one operation on a card.
+message Transaction {
+  string id = 1;
+  string card_id = 2;
+  Money amount = 3;
+  // What the issuer charged, as the issuer reported it.
+  Money issuer_fee = 4;
+  // What the issuer should have charged by its fee terms; a difference is
+  // an unexpected charge to look at. Unset when the terms are unknown.
+  optional Money expected_issuer_fee = 5;
+  // What the platform charged (PLATFORM mode).
+  Money platform_fee = 6;
+  string merchant = 7;
+  // The acquirer's line ("FACEBK*W59P54WZN4"), where a verification code
+  // sits next to the amount.
+  string descriptor = 8;
+  string mcc = 9;
+  // ISO 3166-1 alpha-2.
+  string country = 10;
+  TxStatus status = 11;
+  google.protobuf.Timestamp at = 12;
+}

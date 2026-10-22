@@ -1,0 +1,355 @@
+syntax = "proto3";
+
+package cards.v2;
+
+import "buf/validate/validate.proto";
+import "cards/v2/common.proto";
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/fox1ck-org/vibe-cards/gen/cards/v2;cardsv2";
+
+// CardService is the card itself: issue it, read it, change it, stop it.
+//
+// Who sees a card is ONE condition, the same in every method: the caller is
+// an admin or a viewer of the organisation, or owns the card, or holds it now,
+// or it was shared with them (that card, a label it carries, or all of its
+// owner's cards). Nothing else widens it.
+//
+// What the issuer cannot do is never offered: Card.capabilities lists what
+// the card's issuer can do, and a method that needs a missing one answers
+// ERROR_REASON_ISSUER_UNSUPPORTED.
+service CardService {
+  // Issue buys `count` new cards. The intention is written down BEFORE the
+  // issuer is called, keyed by `request_id`, and the call runs to its end even
+  // if the caller goes away: a retry of the same request_id is answered with
+  // the cards of the first attempt (or ERROR_REASON_IN_PROGRESS while they are
+  // still being bought), never with more cards. A card the issuer builds
+  // slowly comes back CREATING and turns ACTIVE by itself.
+  //
+  // In the PLATFORM issue mode the issuer and BIN are chosen by the platform
+  // and the issue is paid from the organisation's balance; `bin` and
+  // `issuer_account_id` are honoured only in the OWN mode.
+  //
+  // admin: for anybody; member: for themselves; viewer: never.
+  rpc Issue(IssueRequest) returns (IssueResponse);
+  rpc Get(GetRequest) returns (GetResponse);
+  rpc List(ListRequest) returns (ListResponse);
+  // Update changes what the card's owner (or an admin) may change: name,
+  // limits, labels, holder data. A limit the issuer cannot hold
+  // (Card.capabilities) is refused, not ignored — a per-transaction cap the
+  // issuer lacks is a rule, not a limit.
+  rpc Update(UpdateRequest) returns (UpdateResponse);
+  // Pause stops the card. When the issuer cannot stop cards the platform
+  // holds it instead: the status is PAUSED, the card is not handed out and
+  // gives no details, and status_note says the issuer still lets it spend —
+  // what to do in the issuer's cabinet. The owner, an admin, or anyone the
+  // card is shared with for USE may pause.
+  rpc Pause(PauseRequest) returns (PauseResponse);
+  // Resume lifts a pause or a hold. On a QUARANTINE card it is an admin's
+  // verdict that the issuer's page shows the details again.
+  rpc Resume(ResumeRequest) returns (ResumeResponse);
+  rpc Close(CloseRequest) returns (CloseResponse);
+  // Bulk applies one action to many cards: those named, or those a Filter
+  // selects ("freeze all my cards" is Bulk with owner = me and PAUSE). Each
+  // card is checked as if it were the only one; one card's refusal does not
+  // stop the rest.
+  rpc Bulk(BulkRequest) returns (BulkResponse);
+  // RevealNumber shows one card's number to a PERSON, never to a service (a
+  // service gets a ticket from PanService). The guarantees: a card the
+  // caller can see, and — for a member — owns, holds or was given for USE or
+  // VIEW; a reason, required; the journal row written BEFORE the issuer is
+  // asked, so a reveal that cannot be recorded does not happen; a cooldown
+  // per person per card. The owner and admins see every reveal in
+  // ListChanges.
+  rpc RevealNumber(RevealNumberRequest) returns (RevealNumberResponse);
+  // ListChanges is the journal: what happened to cards, who did it and on
+  // whose behalf — issued, taken, returned, shared, number shown, paused by a
+  // rule. With filter.card_ids it is one card's history; with
+  // filter.updated_since it is the feed a client that pulls instead of
+  // subscribing keeps itself fresh with.
+  rpc ListChanges(ListChangesRequest) returns (ListChangesResponse);
+}
+
+// Card is a card as everyone sees it, whichever issuer made it. It never
+// carries the number.
+message Card {
+  string id = 1;
+  string org_id = 2;
+  string last4 = 3;
+  string name = 4;
+  string bin = 5;
+  // "visa", "mastercard".
+  string network = 6;
+  // ISO 4217.
+  string currency = 7;
+  CardStatus status = 8;
+  // Why the status is what it is, in words: "у эмитента не остановить" on a
+  // hold, what the issuer's page lacked on a quarantine, how long a CREATING
+  // card has been building.
+  string status_note = 9;
+  Principal owner = 10;
+  // Who has the card now. Unset: nobody — the card is its owner's.
+  optional Holding holder = 11;
+  // Label names.
+  repeated string labels = 12;
+  Limits limits = 13;
+  Money spent_total = 14;
+  // completed + pending − refunded since local midnight in the organisation's
+  // report time zone.
+  Money spent_today = 15;
+  // Empty in the PLATFORM issue mode: the organisation does not see whose
+  // account the card was issued from.
+  optional string issuer_account_id = 16;
+  // Where the card works.
+  repeated Usage usages = 17;
+  google.protobuf.Timestamp created_at = 18;
+  google.protobuf.Timestamp updated_at = 19;
+  // What the card's issuer can do with it — "pause", "close", "limit_total",
+  // "limit_per_txn", "rename", "number", "three_ds". The console hides a
+  // button whose capability is missing; the API refuses the call.
+  repeated string capabilities = 20;
+  // The tightest per-card daily_limit rule reaching this card (its own, a
+  // label's, its owner's or holder's, the organisation's): spent_today of it
+  // is the day's usage. Unset: no daily limit reaches the card.
+  optional Money daily_limit = 21;
+  // The card's most recent closed holding: who had it last and until when.
+  // Unset when nobody ever held it. The whole history is ListChanges.
+  optional Holding last_holding = 22;
+}
+
+// Limits are what the ISSUER holds. Everything else — a day, a week, a
+// country — is a rule.
+message Limits {
+  // Unset: no limit at the issuer.
+  optional Money total = 1;
+  // Only when the issuer holds per-transaction limits.
+  optional Money per_txn = 2;
+}
+
+// Holding is who has the card now and since when; closed holdings are the
+// card's history.
+message Holding {
+  Principal holder = 1;
+  // Who put the card in the holder's hands: the holder themselves, an admin,
+  // or a service acting for the holder.
+  Principal taken_by = 2;
+  google.protobuf.Timestamp from = 3;
+  // Unset while the card is held.
+  optional google.protobuf.Timestamp to = 4;
+}
+
+// Usage is where the card works. Everything here comes from the client that
+// added it; the cards service keeps it and shows it, and knows nothing about
+// what it names.
+message Usage {
+  // The client application, as it names itself ("vibe-accounts", "anty").
+  string app = 1;
+  // The client's own id of the thing the card pays for.
+  string external_id = 2;
+  // A link to open that thing in the client.
+  string url = 3;
+  // What to call it ("Google Ads · 812-…-4410").
+  string label = 4;
+  // Who added it, and when — filled by the server.
+  Principal added_by = 5;
+  google.protobuf.Timestamp added_at = 6;
+  // The holder the usage was added for, when somebody else added it (a
+  // service, or a person acting for the holder). Filled by the server.
+  optional Principal on_behalf_of = 7;
+}
+
+message IssueRequest {
+  // One press of the button, chosen by the caller and kept across retries of
+  // that press.
+  string request_id = 1 [(buf.validate.field).string.min_len = 1];
+  // Whose the cards will be. Unset: the caller.
+  Principal owner = 2;
+  int32 count = 3 [(buf.validate.field).int32 = {
+    gte: 1
+    lte: 50
+  }];
+  // The limit of each card at the issuer.
+  Limits limits = 4;
+  string name = 5;
+  repeated string labels = 6;
+  // ISO 4217; empty: the issuer's default.
+  string currency = 7;
+  // OWN mode only: a BIN from IssuingService.ListBins.
+  string bin = 8;
+  // OWN mode only: empty is the organisation's default account.
+  string issuer_account_id = 9;
+  // Holder data for these cards; empty lets the BIN or account decide.
+  string holder_profile_id = 10;
+  // Put the cards straight into the owner's hands.
+  bool take = 11;
+}
+
+message IssueResponse {
+  repeated Card cards = 1;
+}
+
+message GetRequest {
+  string id = 1 [(buf.validate.field).string.min_len = 1];
+}
+
+message GetResponse {
+  Card card = 1;
+}
+
+message ListRequest {
+  Filter filter = 1;
+  PageRequest page = 2;
+  // "created_at", "updated_at", "spent_today", "spent_total", "last4";
+  // a leading "-" sorts descending. Empty: newest first.
+  string order_by = 3;
+}
+
+message ListResponse {
+  repeated Card cards = 1;
+  PageResponse page = 2;
+  // Distinct people and services holding a card the filter selects (over
+  // the whole result, not the page).
+  int32 holder_count = 3;
+}
+
+message UpdateRequest {
+  string id = 1 [(buf.validate.field).string.min_len = 1];
+  optional string name = 2;
+  // Replaces the card's limits when set.
+  optional Limits limits = 3;
+  repeated string add_labels = 4;
+  repeated string remove_labels = 5;
+  // "" clears the card's own choice and lets the BIN or account decide.
+  optional string holder_profile_id = 6;
+}
+
+message UpdateResponse {
+  Card card = 1;
+}
+
+message PauseRequest {
+  string id = 1 [(buf.validate.field).string.min_len = 1];
+  string reason = 2;
+}
+
+message PauseResponse {
+  Card card = 1;
+}
+
+message ResumeRequest {
+  string id = 1 [(buf.validate.field).string.min_len = 1];
+}
+
+message ResumeResponse {
+  Card card = 1;
+}
+
+message CloseRequest {
+  string id = 1 [(buf.validate.field).string.min_len = 1];
+  string reason = 2;
+}
+
+message CloseResponse {
+  Card card = 1;
+}
+
+enum BulkAction {
+  BULK_ACTION_UNSPECIFIED = 0;
+  BULK_ACTION_PAUSE = 1;
+  BULK_ACTION_RESUME = 2;
+  BULK_ACTION_CLOSE = 3;
+  // Uses BulkRequest.limits.
+  BULK_ACTION_SET_LIMITS = 4;
+  // Uses BulkRequest.labels.
+  BULK_ACTION_ADD_LABELS = 5;
+  BULK_ACTION_REMOVE_LABELS = 6;
+}
+
+message BulkRequest {
+  // The cards: Filter.card_ids for a selection, any other field for "all
+  // that match". An empty filter is refused — it would be every card.
+  Filter filter = 1 [(buf.validate.field).required = true];
+  BulkAction action = 2 [(buf.validate.field).enum = {
+    defined_only: true
+    not_in: [0]
+  }];
+  Limits limits = 3;
+  repeated string labels = 4;
+  string reason = 5;
+}
+
+message BulkResponse {
+  int32 succeeded = 1;
+  int32 failed = 2;
+  repeated BulkFailure failures = 3;
+}
+
+message BulkFailure {
+  string card_id = 1;
+  // An ErrorReason, as in ErrorInfo.reason.
+  string reason = 2;
+  string message = 3;
+}
+
+message RevealNumberRequest {
+  string card_id = 1 [(buf.validate.field).string.min_len = 1];
+  // Why the number is needed. Recorded with the reveal.
+  string reason = 2 [(buf.validate.field).string.min_len = 1];
+}
+
+message RevealNumberResponse {
+  string number = 1;
+  string exp_month = 2;
+  string exp_year = 3;
+  string cvv = 4;
+  // The holder data the card is presented with, so a person typing a form
+  // types what an automated client would.
+  HolderData holder = 5;
+  // What the issuer's page did not show ("exp", "cvv"); the rest is still
+  // given, and the console names what is missing instead of blanks.
+  repeated string hidden_by_issuer = 6;
+  // The console hides the number after this instant.
+  google.protobuf.Timestamp visible_until = 7;
+}
+
+// HolderData is the cardholder name and address a merchant that checks the
+// address (AVS) is given.
+message HolderData {
+  string name = 1;
+  string street = 2;
+  string city = 3;
+  string state = 4;
+  string zip = 5;
+  // ISO 3166-1 alpha-2.
+  string country = 6;
+}
+
+message ListChangesRequest {
+  Filter filter = 1;
+  PageRequest page = 2;
+}
+
+message ListChangesResponse {
+  repeated CardChange changes = 1;
+  PageResponse page = 2;
+}
+
+// CardChange is one entry of the journal.
+message CardChange {
+  string id = 1;
+  string card_id = 2;
+  // "card.issued", "card.updated", "card.paused", "card.resumed",
+  // "card.closed", "card.quarantined", "holding.taken", "holding.returned",
+  // "holding.transferred", "usage.added", "usage.removed", "share.added",
+  // "share.removed", "number.revealed", "number.granted", "rule.paused".
+  // A new kind is an addition; clients show unknown kinds as text.
+  string kind = 3;
+  // Who acted: the person, or the service.
+  Principal actor = 4;
+  // The person a service acted for (the "on behalf of" header), when it said.
+  optional Principal on_behalf_of = 5;
+  // A sentence a person can read ("лимит поднят до $5 000", the reason given
+  // for a reveal).
+  string summary = 6;
+  google.protobuf.Timestamp at = 7;
+}

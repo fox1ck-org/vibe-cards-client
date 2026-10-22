@@ -1,0 +1,102 @@
+syntax = "proto3";
+
+package cards.v2;
+
+import "buf/validate/validate.proto";
+import "cards/v2/common.proto";
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/fox1ck-org/vibe-cards/gen/cards/v2;cardsv2";
+
+// ShareService is who else may see or use a card. A card is shared one at a
+// time, by a label, or as "all of the owner's cards" — which includes the
+// cards the owner issues or takes later. That last one is how a person hands
+// their cards to an assistant: there is no assistant role, only a member
+// who was given all of somebody's cards for USE.
+//
+// The owner shares their own cards and labels; an admin shares any; a viewer
+// shares nothing.
+service ShareService {
+  // Share adds the shares, each as if alone. Sharing what is already shared
+  // with the same principal replaces its right.
+  rpc Share(ShareRequest) returns (ShareResponse);
+  // Unshare removes shares. What the recipient holds from them is returned to
+  // its owner.
+  rpc Unshare(UnshareRequest) returns (UnshareResponse);
+  // ListShares lists the shares the caller may see: those they made, those
+  // made with them, and — for an admin — all.
+  rpc ListShares(ListSharesRequest) returns (ListSharesResponse);
+  // SearchPrincipals finds who a card can be shared with or handed to:
+  // people in the organisation's directory and its services, by name,
+  // e-mail or id. Anybody signed in may ask.
+  rpc SearchPrincipals(SearchPrincipalsRequest) returns (SearchPrincipalsResponse);
+}
+
+message Share {
+  // Filled by the server.
+  string id = 1;
+  oneof target {
+    string card_id = 2;
+    // A label name: every card carrying it, now and later.
+    string label = 3;
+    // An owner's principal id: all of their cards, now and later.
+    string all_of_owner = 4;
+  }
+  Principal with = 5;
+  Right right = 6;
+  // Filled by the server.
+  Principal shared_by = 7;
+  google.protobuf.Timestamp created_at = 8;
+}
+
+message ShareRequest {
+  repeated Share shares = 1 [(buf.validate.field).repeated.min_items = 1];
+}
+
+message ShareResponse {
+  repeated Share shares = 1;
+}
+
+message UnshareRequest {
+  repeated string share_ids = 1 [(buf.validate.field).repeated.min_items = 1];
+}
+
+message UnshareResponse {
+  int32 removed = 1;
+}
+
+// No filter: every share the caller may see — all of them for an
+// administrator or viewer; for anybody else the shares they made, were
+// given, or that reach a card they own. Paged.
+message ListSharesRequest {
+  // Shares that reach this card, whichever way (the card, a label it
+  // carries, all of its owner's cards).
+  string card_id = 1;
+  // Shares with this principal id; "me" is the caller.
+  string with_id = 2;
+  // Shares of this owner's cards; "me" is the caller.
+  string owner_id = 3;
+  PageRequest page = 4;
+}
+
+message ListSharesResponse {
+  repeated Share shares = 1;
+  PageResponse page = 2;
+}
+
+message SearchPrincipalsRequest {
+  // Empty: the first `limit` people and services.
+  string query = 1;
+  // 1–50; 0 is 20.
+  int32 limit = 2 [(buf.validate.field).int32 = {
+    gte: 0
+    lte: 50
+  }];
+}
+
+message SearchPrincipalsResponse {
+  repeated Principal principals = 1;
+  // False when the directory could not be asked and the people are only
+  // those who have signed in here.
+  bool from_directory = 2;
+}
