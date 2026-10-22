@@ -4,7 +4,7 @@ syntax = "proto3";
 // a card, whose it is, who has it now, who it is shared with, where it is
 // used, how much it may spend, what happened.
 //
-// This is the sole card contract. What is not here on purpose, and must not
+// This is the only contract. What is not here on purpose, and must not
 // come back:
 //   - pools, groups, "free cards", stock to keep, "hold N in reserve": a card
 //     is issued, taken, shared, returned — nothing else;
@@ -207,4 +207,9 @@ enum ErrorReason {
   ERROR_REASON_NO_HOLDER_PROFILE = 19;
   // Archiving holder data a BIN or account still resolves to.
   ERROR_REASON_PROFILE_IN_USE = 20;
+  // Discard the complete paginated read and retry from BeginRead.
+  ERROR_REASON_READ_CHANGED = 21;
+  ERROR_REASON_READ_EXPIRED = 22;
+  // Visibility changed or a polling cursor expired; bootstrap again.
+  ERROR_REASON_CURSOR_INVALIDATED = 23;
 }

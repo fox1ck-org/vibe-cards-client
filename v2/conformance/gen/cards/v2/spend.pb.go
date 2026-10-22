@@ -775,9 +775,9 @@ const file_cards_v2_spend_proto_rawDesc = "" +
 	"\n" +
 	"BUCKET_DAY\x10\x022H\n" +
 	"\fSpendService\x128\n" +
-	"\x05Query\x12\x16.cards.v2.QueryRequest\x1a\x17.cards.v2.QueryResponseB\x92\x01\n" +
+	"\x05Query\x12\x16.cards.v2.QueryRequest\x1a\x17.cards.v2.QueryResponseB\xa8\x01\n" +
 	"\fcom.cards.v2B\n" +
-	"SpendProtoP\x01Z5github.com/fox1ck-org/vibe-cards/gen/cards/v2;cardsv2\xa2\x02\x03CXX\xaa\x02\bCards.V2\xca\x02\bCards\\V2\xe2\x02\x14Cards\\V2\\GPBMetadata\xea\x02\tCards::V2b\x06proto3"
+	"SpendProtoP\x01ZKgithub.com/fox1ck-org/vibe-cards-client/v2/conformance/gen/cards/v2;cardsv2\xa2\x02\x03CXX\xaa\x02\bCards.V2\xca\x02\bCards\\V2\xe2\x02\x14Cards\\V2\\GPBMetadata\xea\x02\tCards::V2b\x06proto3"
 
 var (
 	file_cards_v2_spend_proto_rawDescOnce sync.Once

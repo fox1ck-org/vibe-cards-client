@@ -519,6 +519,9 @@ func TestShareAndSpendWire(t *testing.T) {
 // sentinels is every reason the client names. The drift test below fails
 // when the proto gains a reason this map (and so the client) lacks.
 var sentinels = map[vibecards.Reason]error{
+	vibecards.ReasonReadChanged:         vibecards.ErrReadChanged,
+	vibecards.ReasonReadExpired:         vibecards.ErrReadExpired,
+	vibecards.ReasonCursorInvalidated:   vibecards.ErrCursorInvalidated,
 	vibecards.ReasonNotFound:            vibecards.ErrNotFound,
 	vibecards.ReasonNotAllowed:          vibecards.ErrNotAllowed,
 	vibecards.ReasonLimitReached:        vibecards.ErrLimitReached,

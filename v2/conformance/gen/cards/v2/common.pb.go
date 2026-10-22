@@ -8,7 +8,7 @@
 // a card, whose it is, who has it now, who it is shared with, where it is
 // used, how much it may spend, what happened.
 //
-// This is the sole card contract. What is not here on purpose, and must not
+// This is the only contract. What is not here on purpose, and must not
 // come back:
 //   - pools, groups, "free cards", stock to keep, "hold N in reserve": a card
 //     is issued, taken, shared, returned — nothing else;
@@ -277,6 +277,11 @@ const (
 	ErrorReason_ERROR_REASON_NO_HOLDER_PROFILE ErrorReason = 19
 	// Archiving holder data a BIN or account still resolves to.
 	ErrorReason_ERROR_REASON_PROFILE_IN_USE ErrorReason = 20
+	// Discard the complete paginated read and retry from BeginRead.
+	ErrorReason_ERROR_REASON_READ_CHANGED ErrorReason = 21
+	ErrorReason_ERROR_REASON_READ_EXPIRED ErrorReason = 22
+	// Visibility changed or a polling cursor expired; bootstrap again.
+	ErrorReason_ERROR_REASON_CURSOR_INVALIDATED ErrorReason = 23
 )
 
 // Enum value maps for ErrorReason.
@@ -303,6 +308,9 @@ var (
 		18: "ERROR_REASON_RULE_INVALID",
 		19: "ERROR_REASON_NO_HOLDER_PROFILE",
 		20: "ERROR_REASON_PROFILE_IN_USE",
+		21: "ERROR_REASON_READ_CHANGED",
+		22: "ERROR_REASON_READ_EXPIRED",
+		23: "ERROR_REASON_CURSOR_INVALIDATED",
 	}
 	ErrorReason_value = map[string]int32{
 		"ERROR_REASON_UNSPECIFIED":          0,
@@ -326,6 +334,9 @@ var (
 		"ERROR_REASON_RULE_INVALID":         18,
 		"ERROR_REASON_NO_HOLDER_PROFILE":    19,
 		"ERROR_REASON_PROFILE_IN_USE":       20,
+		"ERROR_REASON_READ_CHANGED":         21,
+		"ERROR_REASON_READ_EXPIRED":         22,
+		"ERROR_REASON_CURSOR_INVALIDATED":   23,
 	}
 )
 
@@ -947,7 +958,7 @@ const file_cards_v2_common_proto_rawDesc = "" +
 	"\x11TX_STATUS_PENDING\x10\x01\x12\x17\n" +
 	"\x13TX_STATUS_COMPLETED\x10\x02\x12\x16\n" +
 	"\x12TX_STATUS_DECLINED\x10\x03\x12\x16\n" +
-	"\x12TX_STATUS_REFUNDED\x10\x04*\xb5\x05\n" +
+	"\x12TX_STATUS_REFUNDED\x10\x04*\x98\x06\n" +
 	"\vErrorReason\x12\x1c\n" +
 	"\x18ERROR_REASON_UNSPECIFIED\x10\x00\x12\x1a\n" +
 	"\x16ERROR_REASON_NOT_FOUND\x10\x01\x12\x1c\n" +
@@ -970,7 +981,10 @@ const file_cards_v2_common_proto_rawDesc = "" +
 	"\x19ERROR_REASON_LABEL_EXISTS\x10\x11\x12\x1d\n" +
 	"\x19ERROR_REASON_RULE_INVALID\x10\x12\x12\"\n" +
 	"\x1eERROR_REASON_NO_HOLDER_PROFILE\x10\x13\x12\x1f\n" +
-	"\x1bERROR_REASON_PROFILE_IN_USE\x10\x14B\xa9\x01\n" +
+	"\x1bERROR_REASON_PROFILE_IN_USE\x10\x14\x12\x1d\n" +
+	"\x19ERROR_REASON_READ_CHANGED\x10\x15\x12\x1d\n" +
+	"\x19ERROR_REASON_READ_EXPIRED\x10\x16\x12#\n" +
+	"\x1fERROR_REASON_CURSOR_INVALIDATED\x10\x17B\xa9\x01\n" +
 	"\fcom.cards.v2B\vCommonProtoP\x01ZKgithub.com/fox1ck-org/vibe-cards-client/v2/conformance/gen/cards/v2;cardsv2\xa2\x02\x03CXX\xaa\x02\bCards.V2\xca\x02\bCards\\V2\xe2\x02\x14Cards\\V2\\GPBMetadata\xea\x02\tCards::V2b\x06proto3"
 
 var (
