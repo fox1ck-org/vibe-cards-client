@@ -179,3 +179,13 @@ Tag in lockstep with the vibe-cards API it speaks to. The module lives in the
 ```sh
 git tag v2.2.0 && git push origin v2.2.0
 ```
+
+## Issuer references
+
+`ListAccounts(ctx)` reads the organisation's own issuer connections (kind, name,
+balance and capabilities), without credentials. It needs organisation-wide
+issuing read access. `Card.IssuerAccountID` joins a card to an account.
+
+`Transaction.IssuerReference` is the issuer's stable operation identifier,
+available with OWN issuing read access and empty in PLATFORM mode or when
+unknown. Keep it distinct from `Transaction.ID`, the card service's identifier.

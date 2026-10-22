@@ -569,11 +569,14 @@ type Transaction struct {
 	Descriptor_ string `protobuf:"bytes,8,opt,name=descriptor,proto3" json:"descriptor,omitempty"`
 	Mcc         string `protobuf:"bytes,9,opt,name=mcc,proto3" json:"mcc,omitempty"`
 	// ISO 3166-1 alpha-2.
-	Country       string                 `protobuf:"bytes,10,opt,name=country,proto3" json:"country,omitempty"`
-	Status        TxStatus               `protobuf:"varint,11,opt,name=status,proto3,enum=cards.v2.TxStatus" json:"status,omitempty"`
-	At            *timestamppb.Timestamp `protobuf:"bytes,12,opt,name=at,proto3" json:"at,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	Country string                 `protobuf:"bytes,10,opt,name=country,proto3" json:"country,omitempty"`
+	Status  TxStatus               `protobuf:"varint,11,opt,name=status,proto3,enum=cards.v2.TxStatus" json:"status,omitempty"`
+	At      *timestamppb.Timestamp `protobuf:"bytes,12,opt,name=at,proto3" json:"at,omitempty"`
+	// Stable reference in the issuer's own ledger. Available when the caller
+	// can read OWN issuing settings; empty in PLATFORM mode or when unknown.
+	IssuerReference string `protobuf:"bytes,13,opt,name=issuer_reference,json=issuerReference,proto3" json:"issuer_reference,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
 }
 
 func (x *Transaction) Reset() {
@@ -690,6 +693,13 @@ func (x *Transaction) GetAt() *timestamppb.Timestamp {
 	return nil
 }
 
+func (x *Transaction) GetIssuerReference() string {
+	if x != nil {
+		return x.IssuerReference
+	}
+	return ""
+}
+
 var File_cards_v2_spend_proto protoreflect.FileDescriptor
 
 const file_cards_v2_spend_proto_rawDesc = "" +
@@ -731,7 +741,7 @@ const file_cards_v2_spend_proto_rawDesc = "" +
 	"\n" +
 	"SpendPoint\x12*\n" +
 	"\x02at\x18\x01 \x01(\v2\x1a.google.protobuf.TimestampR\x02at\x12%\n" +
-	"\x05spent\x18\x02 \x01(\v2\x0f.cards.v2.MoneyR\x05spent\"\xe1\x03\n" +
+	"\x05spent\x18\x02 \x01(\v2\x0f.cards.v2.MoneyR\x05spent\"\x8c\x04\n" +
 	"\vTransaction\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x17\n" +
 	"\acard_id\x18\x02 \x01(\tR\x06cardId\x12'\n" +
@@ -748,7 +758,8 @@ const file_cards_v2_spend_proto_rawDesc = "" +
 	"\acountry\x18\n" +
 	" \x01(\tR\acountry\x12*\n" +
 	"\x06status\x18\v \x01(\x0e2\x12.cards.v2.TxStatusR\x06status\x12*\n" +
-	"\x02at\x18\f \x01(\v2\x1a.google.protobuf.TimestampR\x02atB\x16\n" +
+	"\x02at\x18\f \x01(\v2\x1a.google.protobuf.TimestampR\x02at\x12)\n" +
+	"\x10issuer_reference\x18\r \x01(\tR\x0fissuerReferenceB\x16\n" +
 	"\x14_expected_issuer_fee*\x9f\x01\n" +
 	"\aGroupBy\x12\x18\n" +
 	"\x14GROUP_BY_UNSPECIFIED\x10\x00\x12\x11\n" +
@@ -764,9 +775,9 @@ const file_cards_v2_spend_proto_rawDesc = "" +
 	"\n" +
 	"BUCKET_DAY\x10\x022H\n" +
 	"\fSpendService\x128\n" +
-	"\x05Query\x12\x16.cards.v2.QueryRequest\x1a\x17.cards.v2.QueryResponseB\xa8\x01\n" +
+	"\x05Query\x12\x16.cards.v2.QueryRequest\x1a\x17.cards.v2.QueryResponseB\x92\x01\n" +
 	"\fcom.cards.v2B\n" +
-	"SpendProtoP\x01ZKgithub.com/fox1ck-org/vibe-cards-client/v2/conformance/gen/cards/v2;cardsv2\xa2\x02\x03CXX\xaa\x02\bCards.V2\xca\x02\bCards\\V2\xe2\x02\x14Cards\\V2\\GPBMetadata\xea\x02\tCards::V2b\x06proto3"
+	"SpendProtoP\x01Z5github.com/fox1ck-org/vibe-cards/gen/cards/v2;cardsv2\xa2\x02\x03CXX\xaa\x02\bCards.V2\xca\x02\bCards\\V2\xe2\x02\x14Cards\\V2\\GPBMetadata\xea\x02\tCards::V2b\x06proto3"
 
 var (
 	file_cards_v2_spend_proto_rawDescOnce sync.Once

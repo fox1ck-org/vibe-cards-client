@@ -56,9 +56,11 @@ type SpendPoint struct {
 
 // Transaction is one operation on a card.
 type Transaction struct {
-	ID     string `json:"id"`
-	CardID string `json:"cardId"`
-	Amount Money  `json:"amount"`
+	ID string `json:"id"`
+	// The issuer's stable operation reference. Empty in PLATFORM mode.
+	IssuerReference string `json:"issuerReference"`
+	CardID          string `json:"cardId"`
+	Amount          Money  `json:"amount"`
 	// What the issuer charged, as it reported.
 	IssuerFee Money `json:"issuerFee"`
 	// What its fee terms say it should have charged; nil: terms unknown.

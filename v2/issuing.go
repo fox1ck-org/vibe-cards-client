@@ -1,6 +1,9 @@
 package vibecards
 
-import "context"
+import (
+	"context"
+	"time"
+)
 
 const issuingService = "/cards.v2.IssuingService/"
 
@@ -30,4 +33,30 @@ func (c *Client) TopUp(ctx context.Context, in TopUpInput) (*Money, error) {
 		return nil, err
 	}
 	return out.Balance, nil
+}
+
+// IssuerAccount is an organisation's own issuer connection. It contains no
+// credentials. Accounts are hidden in PLATFORM mode.
+type IssuerAccount struct {
+	ID           string      `json:"id"`
+	Owner        IssuerOwner `json:"owner"`
+	Kind         string      `json:"kind"`
+	Capabilities []string    `json:"capabilities"`
+	Balance      *Money      `json:"balance"`
+	IsDefault    bool        `json:"isDefault"`
+	Name         string      `json:"name"`
+	CardCount    int32       `json:"cardCount"`
+	RunsOutAt    *time.Time  `json:"runsOutAt"`
+}
+
+// ListAccounts returns the organisation's own issuer accounts. It requires
+// permission to read organisation-wide issuing settings; it never returns secrets.
+func (c *Client) ListAccounts(ctx context.Context) ([]IssuerAccount, error) {
+	var out struct {
+		Accounts []IssuerAccount `json:"accounts"`
+	}
+	if err := c.call(ctx, issuingService+"ListAccounts", struct{}{}, &out, false); err != nil {
+		return nil, err
+	}
+	return out.Accounts, nil
 }

@@ -125,4 +125,7 @@ message Transaction {
   string country = 10;
   TxStatus status = 11;
   google.protobuf.Timestamp at = 12;
+  // Stable reference in the issuer's own ledger. Available when the caller
+  // can read OWN issuing settings; empty in PLATFORM mode or when unknown.
+  string issuer_reference = 13;
 }
