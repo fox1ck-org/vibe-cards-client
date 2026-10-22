@@ -11,8 +11,8 @@ import (
 	"time"
 )
 
-// DefaultBaseURL is the in-cluster address. Consumers override it in config.
-const DefaultBaseURL = "http://vibe-cards-api.vibe-cards.svc:8080"
+// DefaultBaseURL is a local endpoint. Configure the deployed service URL explicitly.
+const DefaultBaseURL = "http://localhost:8080"
 
 // The headers a service names the person behind a call with. vibe-cards
 // believes them only from a service key carrying the `on_behalf` scope;

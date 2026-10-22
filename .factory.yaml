@@ -13,7 +13,7 @@ branch_protect: false
 specs: { required: false, paths: [docs/specs/] }
 
 worktree_setup:
-  - go mod download
+  - cd v2 && go mod download
   - cd v2/conformance && go mod download
 
 # `go test` IS here, unlike in the services: these tests are pure and need
@@ -21,11 +21,7 @@ worktree_setup:
 # real check this repo has.
 worktree_checks:
   - name: build
-    run: go build ./...
-  - name: vet
-    run: go vet ./...
-  - name: test
-    run: go test ./...
+    run: cd v2 && go build ./...
   # cards.v2: the client module (stdlib only) and its conformance module,
   # which runs it against handlers generated from the cards.v2 proto.
   - name: v2-vet

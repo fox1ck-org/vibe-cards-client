@@ -4,9 +4,8 @@ syntax = "proto3";
 // a card, whose it is, who has it now, who it is shared with, where it is
 // used, how much it may spend, what happened.
 //
-// It is served next to cards.v1 over ONE database while consumers move over;
-// then v1 is deleted whole, with no compatibility layer. What is not here on
-// purpose, and must not come back:
+// This is the sole card contract. What is not here on purpose, and must not
+// come back:
 //   - pools, groups, "free cards", stock to keep, "hold N in reserve": a card
 //     is issued, taken, shared, returned — nothing else;
 //   - roles beyond admin / member / viewer: an assistant is a member somebody

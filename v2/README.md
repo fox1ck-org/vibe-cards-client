@@ -13,9 +13,7 @@ cards := vibecards.New(os.Getenv("VIBE_CARDS_URL"), os.Getenv("VIBE_CARDS_API_KE
 (`ErrNotConfigured`), so a service without the integration degrades instead of
 panicking.
 
-The v1 client (`github.com/fox1ck-org/vibe-cards-client`, cards.v1: pools,
-draw, assignments) lives at the repository root until every consumer has
-moved; then cards.v1 is deleted.
+The repository root contains no Go module. Import this `/v2` module.
 
 ## The model in one paragraph
 
