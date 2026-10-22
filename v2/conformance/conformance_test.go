@@ -71,27 +71,54 @@ type caller struct {
 	sub     string
 	service bool
 	actor   string
+	// org and via: a trusted service account (via) acting for the person
+	// sub of org (X-On-Behalf-*).
+	org, via string
 }
 
 type ctxKey struct{}
 
+// trustedSA stands for the token of a realm customers service account in
+// vibe-cards' ON_BEHALF_TRUSTED (svc-cabinet).
+const trustedSA = "sa-svc-cabinet"
+
+// onBehalfProcedures is vibe-cards' middleware.OnBehalfProcedures.
+var onBehalfProcedures = map[string]bool{
+	cardsv2connect.CardServiceListProcedure:   true,
+	cardsv2connect.SpendServiceQueryProcedure: true,
+}
+
 // auth mirrors vibe-cards' interceptor in what the client relies on: a
-// Bearer credential, and X-Actor-* believed only from a service key with
-// the on_behalf scope.
-func auth(onBehalfKeys map[string]bool) connect.UnaryInterceptorFunc {
+// Bearer credential; X-Actor-* believed only from a service key with the
+// on_behalf scope (ignored from anybody else); X-On-Behalf-* believed only
+// from the trusted service account, with both org and person, on
+// onBehalfProcedures (refused from anybody else). Every caller let through
+// is recorded on f.callers.
+func (f *fake) auth(onBehalfKeys map[string]bool) connect.UnaryInterceptorFunc {
 	return func(next connect.UnaryFunc) connect.UnaryFunc {
 		return func(ctx context.Context, req connect.AnyRequest) (connect.AnyResponse, error) {
-			tok, ok := strings.CutPrefix(req.Header().Get("Authorization"), "Bearer ")
+			h := req.Header()
+			tok, ok := strings.CutPrefix(h.Get("Authorization"), "Bearer ")
 			if !ok || tok == "" {
 				return nil, connect.NewError(connect.CodeUnauthenticated, errors.New("no credential"))
 			}
+			org, sub := strings.TrimSpace(h.Get(vibecards.HeaderOnBehalfOrg)), strings.TrimSpace(h.Get(vibecards.HeaderOnBehalfSub))
 			c := caller{sub: tok}
-			if strings.HasPrefix(tok, "vck_") {
+			switch {
+			case strings.HasPrefix(tok, "vck_"):
 				c.sub, c.service = "api-key:"+strings.TrimPrefix(tok, "vck_"), true
 				if onBehalfKeys[tok] {
-					c.actor = req.Header().Get("X-Actor-Sub")
+					c.actor = h.Get(vibecards.HeaderActorSub)
 				}
+			case org != "" || sub != "":
+				if tok != trustedSA || org == "" || sub == "" || !onBehalfProcedures[req.Spec().Procedure] {
+					return nil, connect.NewError(connect.CodePermissionDenied, errors.New("on-behalf call not allowed"))
+				}
+				c = caller{sub: sub, org: org, via: tok}
 			}
+			f.mu.Lock()
+			f.callers = append(f.callers, c)
+			f.mu.Unlock()
 			return next(context.WithValue(ctx, ctxKey{}, c), req)
 		}
 	}
@@ -118,6 +145,8 @@ type fake struct {
 	raceTake map[string]string
 	// reason, when set, is answered by Get for the drift test.
 	reason pb.ErrorReason
+	// callers is who auth let through, in order.
+	callers []caller
 }
 
 func (f *fake) find(id string) (*pb.Card, error) {
@@ -374,7 +403,7 @@ func newServer(t *testing.T, numeric bool) (*fake, *vibecards.Client) {
 		raceTake: map[string]string{"a": "sub-other"},
 	}
 	opts := []connect.HandlerOption{
-		connect.WithInterceptors(auth(map[string]bool{"vck_accounts": true})),
+		connect.WithInterceptors(f.auth(map[string]bool{"vck_accounts": true})),
 		connect.WithCodec(jsonCodec{numeric: numeric}),
 	}
 	mux := http.NewServeMux()
@@ -809,6 +838,42 @@ func TestListAccountsWire(t *testing.T) {
 		a := accounts[0]
 		if a.ID != "issuer-fixture" || a.Owner != vibecards.IssuerOwnerOrg || a.Kind != "brocard" || a.Name != "Own account" || !a.IsDefault || a.CardCount != 3 || a.Balance == nil || a.Balance.Minor != 321 || a.RunsOutAt != nil || !slices.Equal(a.Capabilities, []string{"issue"}) {
 			t.Fatalf("account %+v", a)
+		}
+	})
+}
+
+// TestCanonicalOnBehalfWire: a trusted service account's WithOnBehalf call
+// runs as that person of that org on List and Spend, and is refused on any
+// other procedure (vibe-cards' OnBehalfProcedures), never silently run as
+// the service.
+func TestCanonicalOnBehalfWire(t *testing.T) {
+	codecs(t, func(t *testing.T, numeric bool) {
+		f, client := newServer(t, numeric)
+		ctx := vibecards.WithOnBehalf(vibecards.WithToken(context.Background(), trustedSA), "org-1", "sub-buyer")
+		if _, err := client.List(ctx, vibecards.ListInput{Filter: vibecards.Filter{Labels: []string{"uk"}}}); err != nil {
+			t.Fatalf("List: %v", err)
+		}
+		from := time.Date(2026, 10, 1, 0, 0, 0, 0, time.UTC)
+		if _, err := client.Spend(ctx, vibecards.SpendQuery{
+			Filter:   vibecards.Filter{CardIDs: []string{"d"}},
+			Range:    vibecards.TimeRange{From: from, To: from.AddDate(0, 1, 0)},
+			TxStatus: []vibecards.TxStatus{vibecards.TxStatusCompleted},
+		}); err != nil {
+			t.Fatalf("Spend: %v", err)
+		}
+		_, err := client.Get(ctx, "a")
+		var e *vibecards.Error
+		if !errors.As(err, &e) || e.Code != "permission_denied" {
+			t.Fatalf("Get on behalf: %v", err)
+		}
+		untrusted := vibecards.WithOnBehalf(vibecards.WithToken(context.Background(), "sa-other"), "org-1", "sub-buyer")
+		_, err = client.List(untrusted, vibecards.ListInput{})
+		if !errors.As(err, &e) || e.Code != "permission_denied" {
+			t.Fatalf("untrusted account on behalf: %v", err)
+		}
+		want := caller{sub: "sub-buyer", org: "org-1", via: trustedSA}
+		if len(f.callers) != 2 || f.callers[0] != want || f.callers[1] != want {
+			t.Fatalf("callers %+v", f.callers)
 		}
 	})
 }
