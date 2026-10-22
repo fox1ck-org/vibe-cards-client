@@ -124,6 +124,56 @@ message Card {
   // The card's most recent closed holding: who had it last and until when.
   // Unset when nobody ever held it. The whole history is ListChanges.
   optional Holding last_holding = 22;
+  // Why the card has the status it has, as a fact a program can act on
+  // (status_note is the same thing in words for a person). UNSPECIFIED when
+  // there is nothing to explain: an ACTIVE or CREATING card, a FAILED one, a
+  // card somebody closed.
+  CardStatusReason status_reason = 23;
+  // The card the issuer reissued this one as. Set together with status
+  // CLOSED and status_reason REPLACED: the holding and the usages moved to
+  // the successor, this card keeps its spend and its history.
+  optional CardLink replaced_by = 24;
+  // The card this one was reissued from — the reverse of replaced_by.
+  optional CardLink replaces = 25;
+  // When the issuer's record of this card (status, limits, spend) was last
+  // read into the platform. Unset: never synced since it was issued. A
+  // client says how old the numbers are by it.
+  optional google.protobuf.Timestamp synced_at = 26;
+}
+
+// CardStatusReason says WHY a card is not simply ACTIVE — who stopped it and
+// who can start it again. Every issuer's own word is folded into these.
+enum CardStatusReason {
+  CARD_STATUS_REASON_UNSPECIFIED = 0;
+  // PAUSED by a person: the issuer stopped the card, and Resume (by its
+  // owner or an admin) starts it again. Includes a pause made in the
+  // issuer's own cabinet — the issuer reports it the same way.
+  CARD_STATUS_REASON_USER_PAUSED = 1;
+  // PAUSED by a person, but the issuer cannot stop cards: the platform holds
+  // the card (not handed out, no details, no ticket) while the issuer STILL
+  // lets it spend. status_note says what to do in the issuer's cabinet.
+  // Resume lifts the hold.
+  CARD_STATUS_REASON_PLATFORM_HOLD = 2;
+  // PAUSED by a rule's breach (a stop at the issuer, or the platform's hold
+  // where the issuer cannot stop cards). Lifted by itself when the breach
+  // passes or its alert is resolved.
+  CARD_STATUS_REASON_RULE_PAUSED = 3;
+  // PAUSED by the ISSUER: its own block or hold on the card. Nothing in the
+  // platform lifts it; a card that must keep working is replaced.
+  CARD_STATUS_REASON_ISSUER_BLOCKED = 4;
+  // QUARANTINE: the issuer's page did not show a usable number, expiry or
+  // CVV. An admin's Resume readmits it.
+  CARD_STATUS_REASON_QUARANTINE = 5;
+  // CLOSED because the issuer reissued it as another card (replaced_by).
+  CARD_STATUS_REASON_REPLACED = 6;
+}
+
+// CardLink names another card in a reissue: which, its last four digits,
+// and when the two were linked.
+message CardLink {
+  string card_id = 1;
+  string last4 = 2;
+  google.protobuf.Timestamp at = 3;
 }
 
 // Limits are what the ISSUER holds. Everything else — a day, a week, a
@@ -219,6 +269,10 @@ message ListResponse {
   // Distinct people and services holding a card the filter selects (over
   // the whole result, not the page).
   int32 holder_count = 3;
+  // holder_count by kind: the people among them, and the services
+  // (holder_people + holder_services = holder_count).
+  int32 holder_people = 4;
+  int32 holder_services = 5;
 }
 
 message UpdateRequest {

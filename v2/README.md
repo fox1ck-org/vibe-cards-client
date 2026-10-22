@@ -84,6 +84,17 @@ list, err := cards.List(ctx, vibecards.ListInput{Filter: vibecards.Filter{
 A removed usage (`RemoveUsage`, or `Return`, which drops the holding's usages)
 no longer selects its card. `UsageExternalID` without `UsageApp` is refused.
 
+## Why a card is stopped, what replaced it, how old it is
+
+`Card.StatusReason` says who stopped a card and who can start it again:
+`USER_PAUSED` (a person; Resume), `PLATFORM_HOLD` (a person, but the issuer
+cannot stop cards — it still spends there), `RULE_PAUSED` (a rule's breach;
+lifts by itself), `ISSUER_BLOCKED` (the issuer's own block — nothing here lifts
+it, so replace the card: `card.IssuerBlocked()`), `QUARANTINE`, `REPLACED`.
+A reissued card is CLOSED with `ReplacedBy` (id, last4, when linked); its
+successor carries `Replaces`. `SyncedAt` is when the issuer's record of the
+card was last read — "issuer data N ago".
+
 ## Errors
 
 Every refusal is a `*vibecards.Error` carrying the server's
@@ -160,7 +171,7 @@ cp ../../../finance/vibe-cards/proto/cards/v2/*.proto conformance/proto/cards/v2
 cd conformance/proto && buf generate && cd .. && go test ./...
 ```
 
-The copy is of vibe-cards #113 (К1-3b: usage filter, background Bulk).
+The copy is of vibe-cards #115 (К1-3c: status_reason, replaced_by/replaces, synced_at).
 
 ## Releasing
 
@@ -168,5 +179,5 @@ Tag in lockstep with the vibe-cards API it speaks to. The module lives in the
 `v2/` major-version subdirectory, so its tags have no prefix:
 
 ```sh
-git tag v2.1.0 && git push origin v2.1.0
+git tag v2.2.0 && git push origin v2.2.0
 ```

@@ -81,6 +81,49 @@ func (s *CardStatus) UnmarshalJSON(b []byte) error {
 // Terminal reports a card that will never spend again.
 func (s CardStatus) Terminal() bool { return s == CardStatusClosed || s == CardStatusFailed }
 
+// CardStatusReason is cards.v2.CardStatusReason: WHY a card has its status —
+// who stopped it and who can start it again.
+type CardStatusReason int32
+
+const (
+	// CardStatusReasonUnspecified: nothing to explain (ACTIVE, CREATING,
+	// FAILED, or a card somebody closed).
+	CardStatusReasonUnspecified CardStatusReason = 0
+	// CardStatusReasonUserPaused: PAUSED by a person; the issuer stopped it
+	// and Resume starts it again.
+	CardStatusReasonUserPaused CardStatusReason = 1
+	// CardStatusReasonPlatformHold: PAUSED by a person, but the issuer
+	// cannot stop cards — the platform holds it while the issuer STILL lets
+	// it spend (StatusNote says what to do in the issuer's cabinet).
+	CardStatusReasonPlatformHold CardStatusReason = 2
+	// CardStatusReasonRulePaused: PAUSED by a rule's breach; lifted by itself
+	// when the breach passes or its alert is resolved.
+	CardStatusReasonRulePaused CardStatusReason = 3
+	// CardStatusReasonIssuerBlocked: PAUSED by the issuer's own block or
+	// hold. Nothing in the platform lifts it — replace the card.
+	CardStatusReasonIssuerBlocked CardStatusReason = 4
+	// CardStatusReasonQuarantine: the issuer's page hid the details.
+	CardStatusReasonQuarantine CardStatusReason = 5
+	// CardStatusReasonReplaced: CLOSED because the issuer reissued it as
+	// Card.ReplacedBy.
+	CardStatusReasonReplaced CardStatusReason = 6
+)
+
+var cardStatusReasonNames = map[string]int32{
+	"CARD_STATUS_REASON_UNSPECIFIED": 0, "CARD_STATUS_REASON_USER_PAUSED": 1,
+	"CARD_STATUS_REASON_PLATFORM_HOLD": 2, "CARD_STATUS_REASON_RULE_PAUSED": 3,
+	"CARD_STATUS_REASON_ISSUER_BLOCKED": 4, "CARD_STATUS_REASON_QUARANTINE": 5,
+	"CARD_STATUS_REASON_REPLACED": 6,
+}
+
+func (r CardStatusReason) String() string               { return enumName(int32(r), cardStatusReasonNames) }
+func (r CardStatusReason) MarshalJSON() ([]byte, error) { return encodeEnum(int32(r)) }
+func (r *CardStatusReason) UnmarshalJSON(b []byte) error {
+	n, err := decodeEnum(b, cardStatusReasonNames)
+	*r = CardStatusReason(n)
+	return err
+}
+
 // PrincipalKind is cards.v2.Principal.Kind.
 type PrincipalKind int32
 
