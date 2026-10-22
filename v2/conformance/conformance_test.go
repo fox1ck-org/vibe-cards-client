@@ -751,3 +751,51 @@ func TestEveryMethodSpeaksTheProto(t *testing.T) {
 
 // WithPerson authenticates as a person (any non-vck_ bearer is one here).
 func WithPerson(ctx context.Context) context.Context { return vibecards.WithToken(ctx, "person-jwt") }
+
+// TestCardSaysWhyWhatReplacedItAndHowOld: what v1 told vibe-accounts and v2
+// must too — the reason a card is stopped (an issuer's block is replaced, a
+// person's pause is not), the successor of a reissued card and the card it
+// came from, and when the issuer's numbers were last read. In both codecs
+// an unset link or time decodes as nil, never as a zero value.
+func TestCardSaysWhyWhatReplacedItAndHowOld(t *testing.T) {
+	codecs(t, func(t *testing.T, numeric bool) {
+		f, client := newServer(t, numeric)
+		ctx := context.Background()
+		linked := time.Date(2026, 9, 2, 10, 0, 0, 0, time.UTC)
+		synced := time.Date(2026, 10, 22, 9, 15, 0, 0, time.UTC)
+
+		f.mu.Lock()
+		b, _ := f.find("b")
+		b.StatusReason = pb.CardStatusReason_CARD_STATUS_REASON_ISSUER_BLOCKED
+		b.SyncedAt = timestamppb.New(synced)
+		c, _ := f.find("c")
+		c.Status = pb.CardStatus_CARD_STATUS_CLOSED
+		c.StatusReason = pb.CardStatusReason_CARD_STATUS_REASON_REPLACED
+		c.ReplacedBy = &pb.CardLink{CardId: "d", Last4: "42dd", At: timestamppb.New(linked)}
+		d, _ := f.find("d")
+		d.Replaces = &pb.CardLink{CardId: "c", Last4: "42cc", At: timestamppb.New(linked)}
+		f.mu.Unlock()
+
+		blocked, err := client.Get(ctx, "b")
+		if err != nil || !blocked.IssuerBlocked() || blocked.StatusReason != vibecards.CardStatusReasonIssuerBlocked ||
+			blocked.SyncedAt == nil || !blocked.SyncedAt.Equal(synced) || blocked.ReplacedBy != nil || blocked.Replaces != nil {
+			t.Fatalf("issuer-blocked card %+v %v", blocked, err)
+		}
+		old, err := client.Get(ctx, "c")
+		if err != nil || old.StatusReason != vibecards.CardStatusReasonReplaced || old.IssuerBlocked() ||
+			old.ReplacedBy == nil || old.ReplacedBy.CardID != "d" || old.ReplacedBy.Last4 != "42dd" ||
+			old.ReplacedBy.At == nil || !old.ReplacedBy.At.Equal(linked) {
+			t.Fatalf("replaced card %+v %v", old, err)
+		}
+		succ, err := client.Get(ctx, "d")
+		if err != nil || succ.Replaces == nil || succ.Replaces.CardID != "c" || succ.StatusReason != vibecards.CardStatusReasonUnspecified ||
+			succ.SyncedAt != nil {
+			t.Fatalf("successor %+v %v", succ, err)
+		}
+		for n, name := range pb.CardStatusReason_name {
+			if got := vibecards.CardStatusReason(n).String(); got != name {
+				t.Errorf("CardStatusReason %d: the client names it %q, the proto %q", n, got, name)
+			}
+		}
+	})
+}

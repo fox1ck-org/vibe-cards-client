@@ -195,8 +195,36 @@ type Card struct {
 	// The most recent closed holding; nil when nobody ever held it.
 	LastHolding *Holding `json:"lastHolding"`
 
+	// Why the status is what it is, as a fact to act on: an
+	// ISSUER_BLOCKED card is to be replaced, a person's or a rule's pause
+	// is not.
+	StatusReason CardStatusReason `json:"statusReason"`
+	// The card the issuer reissued this one as (CLOSED, REPLACED); nil when
+	// it was not reissued.
+	ReplacedBy *CardLink `json:"replacedBy"`
+	// The card this one was reissued from; nil when it is nobody's
+	// successor.
+	Replaces *CardLink `json:"replaces"`
+	// When the issuer's record of the card (status, limits, spend) was last
+	// read; nil: never synced since it was issued.
+	SyncedAt *time.Time `json:"syncedAt"`
+
 	CreatedAt time.Time `json:"createdAt"`
 	UpdatedAt time.Time `json:"updatedAt"`
+}
+
+// CardLink names the other card of a reissue.
+type CardLink struct {
+	CardID string `json:"cardId"`
+	Last4  string `json:"last4"`
+	// When the two cards were linked; nil when unknown.
+	At *time.Time `json:"at"`
+}
+
+// IssuerBlocked reports a card the issuer itself stopped: nothing in the
+// platform lifts it, so a client that needs a working card replaces it.
+func (c *Card) IssuerBlocked() bool {
+	return c != nil && c.StatusReason == CardStatusReasonIssuerBlocked
 }
 
 // Held reports whether somebody holds the card now.
