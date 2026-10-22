@@ -605,8 +605,17 @@ type Filter struct {
 	// Cards issued from these issuer accounts. Only meaningful when the
 	// organisation issues from its own accounts (IssueMode OWN).
 	IssuerAccountIds []string `protobuf:"bytes,9,rep,name=issuer_account_ids,json=issuerAccountIds,proto3" json:"issuer_account_ids,omitempty"`
-	unknownFields    protoimpl.UnknownFields
-	sizeCache        protoimpl.SizeCache
+	// Cards with a usage of this client application (Usage.app, as the client
+	// names itself) — "which cards work for my things?". The usage is live:
+	// a removed usage no longer selects its card.
+	UsageApp string `protobuf:"bytes,10,opt,name=usage_app,json=usageApp,proto3" json:"usage_app,omitempty"`
+	// With usage_app: the card(s) working for this one thing of that client
+	// (Usage.external_id) — "which card pays for my account 812-…-4410?". An
+	// external id is the client's own and means nothing without its app, so
+	// this alone is refused (InvalidArgument).
+	UsageExternalId string `protobuf:"bytes,11,opt,name=usage_external_id,json=usageExternalId,proto3" json:"usage_external_id,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
 }
 
 func (x *Filter) Reset() {
@@ -700,6 +709,20 @@ func (x *Filter) GetIssuerAccountIds() []string {
 		return x.IssuerAccountIds
 	}
 	return nil
+}
+
+func (x *Filter) GetUsageApp() string {
+	if x != nil {
+		return x.UsageApp
+	}
+	return ""
+}
+
+func (x *Filter) GetUsageExternalId() string {
+	if x != nil {
+		return x.UsageExternalId
+	}
+	return ""
 }
 
 type PageRequest struct {
@@ -880,7 +903,7 @@ const file_cards_v2_common_proto_rawDesc = "" +
 	"\x10KIND_UNSPECIFIED\x10\x00\x12\x0f\n" +
 	"\vKIND_PERSON\x10\x01\x12\x10\n" +
 	"\fKIND_SERVICE\x10\x02\x12\f\n" +
-	"\bKIND_ORG\x10\x03\"\xbd\x02\n" +
+	"\bKIND_ORG\x10\x03\"\x86\x03\n" +
 	"\x06Filter\x12\x16\n" +
 	"\x06labels\x18\x01 \x03(\tR\x06labels\x12\x14\n" +
 	"\x05owner\x18\x02 \x03(\tR\x05owner\x12\x16\n" +
@@ -891,7 +914,10 @@ const file_cards_v2_common_proto_rawDesc = "" +
 	"\rupdated_since\x18\x06 \x01(\v2\x1a.google.protobuf.TimestampR\fupdatedSince\x12\x14\n" +
 	"\x05query\x18\a \x01(\tR\x05query\x12\x19\n" +
 	"\bcard_ids\x18\b \x03(\tR\acardIds\x12,\n" +
-	"\x12issuer_account_ids\x18\t \x03(\tR\x10issuerAccountIds\"I\n" +
+	"\x12issuer_account_ids\x18\t \x03(\tR\x10issuerAccountIds\x12\x1b\n" +
+	"\tusage_app\x18\n" +
+	" \x01(\tR\busageApp\x12*\n" +
+	"\x11usage_external_id\x18\v \x01(\tR\x0fusageExternalId\"I\n" +
 	"\vPageRequest\x12\x1b\n" +
 	"\tpage_size\x18\x01 \x01(\x05R\bpageSize\x12\x1d\n" +
 	"\n" +

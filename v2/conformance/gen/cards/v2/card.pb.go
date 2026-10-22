@@ -86,6 +86,61 @@ func (BulkAction) EnumDescriptor() ([]byte, []int) {
 	return file_cards_v2_card_proto_rawDescGZIP(), []int{0}
 }
 
+type BulkOperationState int32
+
+const (
+	BulkOperationState_BULK_OPERATION_STATE_UNSPECIFIED BulkOperationState = 0
+	BulkOperationState_BULK_OPERATION_STATE_RUNNING     BulkOperationState = 1
+	// Every selected card was tried; `failures` says which were refused.
+	BulkOperationState_BULK_OPERATION_STATE_DONE BulkOperationState = 2
+	// The operation itself stopped before trying every card (`done` says how
+	// far it got); the cards it did not reach are unchanged.
+	BulkOperationState_BULK_OPERATION_STATE_FAILED BulkOperationState = 3
+)
+
+// Enum value maps for BulkOperationState.
+var (
+	BulkOperationState_name = map[int32]string{
+		0: "BULK_OPERATION_STATE_UNSPECIFIED",
+		1: "BULK_OPERATION_STATE_RUNNING",
+		2: "BULK_OPERATION_STATE_DONE",
+		3: "BULK_OPERATION_STATE_FAILED",
+	}
+	BulkOperationState_value = map[string]int32{
+		"BULK_OPERATION_STATE_UNSPECIFIED": 0,
+		"BULK_OPERATION_STATE_RUNNING":     1,
+		"BULK_OPERATION_STATE_DONE":        2,
+		"BULK_OPERATION_STATE_FAILED":      3,
+	}
+)
+
+func (x BulkOperationState) Enum() *BulkOperationState {
+	p := new(BulkOperationState)
+	*p = x
+	return p
+}
+
+func (x BulkOperationState) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (BulkOperationState) Descriptor() protoreflect.EnumDescriptor {
+	return file_cards_v2_card_proto_enumTypes[1].Descriptor()
+}
+
+func (BulkOperationState) Type() protoreflect.EnumType {
+	return &file_cards_v2_card_proto_enumTypes[1]
+}
+
+func (x BulkOperationState) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use BulkOperationState.Descriptor instead.
+func (BulkOperationState) EnumDescriptor() ([]byte, []int) {
+	return file_cards_v2_card_proto_rawDescGZIP(), []int{1}
+}
+
 // Card is a card as everyone sees it, whichever issuer made it. It never
 // carries the number.
 type Card struct {
@@ -1429,10 +1484,16 @@ func (x *BulkRequest) GetReason() string {
 }
 
 type BulkResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Succeeded     int32                  `protobuf:"varint,1,opt,name=succeeded,proto3" json:"succeeded,omitempty"`
-	Failed        int32                  `protobuf:"varint,2,opt,name=failed,proto3" json:"failed,omitempty"`
-	Failures      []*BulkFailure         `protobuf:"bytes,3,rep,name=failures,proto3" json:"failures,omitempty"`
+	state     protoimpl.MessageState `protogen:"open.v1"`
+	Succeeded int32                  `protobuf:"varint,1,opt,name=succeeded,proto3" json:"succeeded,omitempty"`
+	Failed    int32                  `protobuf:"varint,2,opt,name=failed,proto3" json:"failed,omitempty"`
+	Failures  []*BulkFailure         `protobuf:"bytes,3,rep,name=failures,proto3" json:"failures,omitempty"`
+	// Set when the cards are worked through in the background (more than 1000
+	// selected): succeeded and failed are then 0, and GetBulkOperation tells
+	// how it goes.
+	OperationId string `protobuf:"bytes,4,opt,name=operation_id,json=operationId,proto3" json:"operation_id,omitempty"`
+	// How many cards the filter selected.
+	Selected      int32 `protobuf:"varint,5,opt,name=selected,proto3" json:"selected,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1488,6 +1549,236 @@ func (x *BulkResponse) GetFailures() []*BulkFailure {
 	return nil
 }
 
+func (x *BulkResponse) GetOperationId() string {
+	if x != nil {
+		return x.OperationId
+	}
+	return ""
+}
+
+func (x *BulkResponse) GetSelected() int32 {
+	if x != nil {
+		return x.Selected
+	}
+	return 0
+}
+
+type GetBulkOperationRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	OperationId   string                 `protobuf:"bytes,1,opt,name=operation_id,json=operationId,proto3" json:"operation_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetBulkOperationRequest) Reset() {
+	*x = GetBulkOperationRequest{}
+	mi := &file_cards_v2_card_proto_msgTypes[20]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetBulkOperationRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetBulkOperationRequest) ProtoMessage() {}
+
+func (x *GetBulkOperationRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_cards_v2_card_proto_msgTypes[20]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetBulkOperationRequest.ProtoReflect.Descriptor instead.
+func (*GetBulkOperationRequest) Descriptor() ([]byte, []int) {
+	return file_cards_v2_card_proto_rawDescGZIP(), []int{20}
+}
+
+func (x *GetBulkOperationRequest) GetOperationId() string {
+	if x != nil {
+		return x.OperationId
+	}
+	return ""
+}
+
+type GetBulkOperationResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Operation     *BulkOperation         `protobuf:"bytes,1,opt,name=operation,proto3" json:"operation,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetBulkOperationResponse) Reset() {
+	*x = GetBulkOperationResponse{}
+	mi := &file_cards_v2_card_proto_msgTypes[21]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetBulkOperationResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetBulkOperationResponse) ProtoMessage() {}
+
+func (x *GetBulkOperationResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_cards_v2_card_proto_msgTypes[21]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetBulkOperationResponse.ProtoReflect.Descriptor instead.
+func (*GetBulkOperationResponse) Descriptor() ([]byte, []int) {
+	return file_cards_v2_card_proto_rawDescGZIP(), []int{21}
+}
+
+func (x *GetBulkOperationResponse) GetOperation() *BulkOperation {
+	if x != nil {
+		return x.Operation
+	}
+	return nil
+}
+
+// BulkOperation is a Bulk running in the background.
+type BulkOperation struct {
+	state  protoimpl.MessageState `protogen:"open.v1"`
+	Id     string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Action BulkAction             `protobuf:"varint,2,opt,name=action,proto3,enum=cards.v2.BulkAction" json:"action,omitempty"`
+	State  BulkOperationState     `protobuf:"varint,3,opt,name=state,proto3,enum=cards.v2.BulkOperationState" json:"state,omitempty"`
+	// The cards the filter selected when the operation started.
+	Total int32 `protobuf:"varint,4,opt,name=total,proto3" json:"total,omitempty"`
+	// Cards tried so far: succeeded + failed.
+	Done      int32 `protobuf:"varint,5,opt,name=done,proto3" json:"done,omitempty"`
+	Succeeded int32 `protobuf:"varint,6,opt,name=succeeded,proto3" json:"succeeded,omitempty"`
+	Failed    int32 `protobuf:"varint,7,opt,name=failed,proto3" json:"failed,omitempty"`
+	// The first refusals (at most 200); `failed` counts them all.
+	Failures      []*BulkFailure         `protobuf:"bytes,8,rep,name=failures,proto3" json:"failures,omitempty"`
+	StartedBy     *Principal             `protobuf:"bytes,9,opt,name=started_by,json=startedBy,proto3" json:"started_by,omitempty"`
+	StartedAt     *timestamppb.Timestamp `protobuf:"bytes,10,opt,name=started_at,json=startedAt,proto3" json:"started_at,omitempty"`
+	FinishedAt    *timestamppb.Timestamp `protobuf:"bytes,11,opt,name=finished_at,json=finishedAt,proto3,oneof" json:"finished_at,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *BulkOperation) Reset() {
+	*x = BulkOperation{}
+	mi := &file_cards_v2_card_proto_msgTypes[22]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BulkOperation) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BulkOperation) ProtoMessage() {}
+
+func (x *BulkOperation) ProtoReflect() protoreflect.Message {
+	mi := &file_cards_v2_card_proto_msgTypes[22]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BulkOperation.ProtoReflect.Descriptor instead.
+func (*BulkOperation) Descriptor() ([]byte, []int) {
+	return file_cards_v2_card_proto_rawDescGZIP(), []int{22}
+}
+
+func (x *BulkOperation) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *BulkOperation) GetAction() BulkAction {
+	if x != nil {
+		return x.Action
+	}
+	return BulkAction_BULK_ACTION_UNSPECIFIED
+}
+
+func (x *BulkOperation) GetState() BulkOperationState {
+	if x != nil {
+		return x.State
+	}
+	return BulkOperationState_BULK_OPERATION_STATE_UNSPECIFIED
+}
+
+func (x *BulkOperation) GetTotal() int32 {
+	if x != nil {
+		return x.Total
+	}
+	return 0
+}
+
+func (x *BulkOperation) GetDone() int32 {
+	if x != nil {
+		return x.Done
+	}
+	return 0
+}
+
+func (x *BulkOperation) GetSucceeded() int32 {
+	if x != nil {
+		return x.Succeeded
+	}
+	return 0
+}
+
+func (x *BulkOperation) GetFailed() int32 {
+	if x != nil {
+		return x.Failed
+	}
+	return 0
+}
+
+func (x *BulkOperation) GetFailures() []*BulkFailure {
+	if x != nil {
+		return x.Failures
+	}
+	return nil
+}
+
+func (x *BulkOperation) GetStartedBy() *Principal {
+	if x != nil {
+		return x.StartedBy
+	}
+	return nil
+}
+
+func (x *BulkOperation) GetStartedAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.StartedAt
+	}
+	return nil
+}
+
+func (x *BulkOperation) GetFinishedAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.FinishedAt
+	}
+	return nil
+}
+
 type BulkFailure struct {
 	state  protoimpl.MessageState `protogen:"open.v1"`
 	CardId string                 `protobuf:"bytes,1,opt,name=card_id,json=cardId,proto3" json:"card_id,omitempty"`
@@ -1500,7 +1791,7 @@ type BulkFailure struct {
 
 func (x *BulkFailure) Reset() {
 	*x = BulkFailure{}
-	mi := &file_cards_v2_card_proto_msgTypes[20]
+	mi := &file_cards_v2_card_proto_msgTypes[23]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1512,7 +1803,7 @@ func (x *BulkFailure) String() string {
 func (*BulkFailure) ProtoMessage() {}
 
 func (x *BulkFailure) ProtoReflect() protoreflect.Message {
-	mi := &file_cards_v2_card_proto_msgTypes[20]
+	mi := &file_cards_v2_card_proto_msgTypes[23]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1525,7 +1816,7 @@ func (x *BulkFailure) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use BulkFailure.ProtoReflect.Descriptor instead.
 func (*BulkFailure) Descriptor() ([]byte, []int) {
-	return file_cards_v2_card_proto_rawDescGZIP(), []int{20}
+	return file_cards_v2_card_proto_rawDescGZIP(), []int{23}
 }
 
 func (x *BulkFailure) GetCardId() string {
@@ -1560,7 +1851,7 @@ type RevealNumberRequest struct {
 
 func (x *RevealNumberRequest) Reset() {
 	*x = RevealNumberRequest{}
-	mi := &file_cards_v2_card_proto_msgTypes[21]
+	mi := &file_cards_v2_card_proto_msgTypes[24]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1572,7 +1863,7 @@ func (x *RevealNumberRequest) String() string {
 func (*RevealNumberRequest) ProtoMessage() {}
 
 func (x *RevealNumberRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_cards_v2_card_proto_msgTypes[21]
+	mi := &file_cards_v2_card_proto_msgTypes[24]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1585,7 +1876,7 @@ func (x *RevealNumberRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RevealNumberRequest.ProtoReflect.Descriptor instead.
 func (*RevealNumberRequest) Descriptor() ([]byte, []int) {
-	return file_cards_v2_card_proto_rawDescGZIP(), []int{21}
+	return file_cards_v2_card_proto_rawDescGZIP(), []int{24}
 }
 
 func (x *RevealNumberRequest) GetCardId() string {
@@ -1622,7 +1913,7 @@ type RevealNumberResponse struct {
 
 func (x *RevealNumberResponse) Reset() {
 	*x = RevealNumberResponse{}
-	mi := &file_cards_v2_card_proto_msgTypes[22]
+	mi := &file_cards_v2_card_proto_msgTypes[25]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1634,7 +1925,7 @@ func (x *RevealNumberResponse) String() string {
 func (*RevealNumberResponse) ProtoMessage() {}
 
 func (x *RevealNumberResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_cards_v2_card_proto_msgTypes[22]
+	mi := &file_cards_v2_card_proto_msgTypes[25]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1647,7 +1938,7 @@ func (x *RevealNumberResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RevealNumberResponse.ProtoReflect.Descriptor instead.
 func (*RevealNumberResponse) Descriptor() ([]byte, []int) {
-	return file_cards_v2_card_proto_rawDescGZIP(), []int{22}
+	return file_cards_v2_card_proto_rawDescGZIP(), []int{25}
 }
 
 func (x *RevealNumberResponse) GetNumber() string {
@@ -1716,7 +2007,7 @@ type HolderData struct {
 
 func (x *HolderData) Reset() {
 	*x = HolderData{}
-	mi := &file_cards_v2_card_proto_msgTypes[23]
+	mi := &file_cards_v2_card_proto_msgTypes[26]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1728,7 +2019,7 @@ func (x *HolderData) String() string {
 func (*HolderData) ProtoMessage() {}
 
 func (x *HolderData) ProtoReflect() protoreflect.Message {
-	mi := &file_cards_v2_card_proto_msgTypes[23]
+	mi := &file_cards_v2_card_proto_msgTypes[26]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1741,7 +2032,7 @@ func (x *HolderData) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use HolderData.ProtoReflect.Descriptor instead.
 func (*HolderData) Descriptor() ([]byte, []int) {
-	return file_cards_v2_card_proto_rawDescGZIP(), []int{23}
+	return file_cards_v2_card_proto_rawDescGZIP(), []int{26}
 }
 
 func (x *HolderData) GetName() string {
@@ -1796,7 +2087,7 @@ type ListChangesRequest struct {
 
 func (x *ListChangesRequest) Reset() {
 	*x = ListChangesRequest{}
-	mi := &file_cards_v2_card_proto_msgTypes[24]
+	mi := &file_cards_v2_card_proto_msgTypes[27]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1808,7 +2099,7 @@ func (x *ListChangesRequest) String() string {
 func (*ListChangesRequest) ProtoMessage() {}
 
 func (x *ListChangesRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_cards_v2_card_proto_msgTypes[24]
+	mi := &file_cards_v2_card_proto_msgTypes[27]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1821,7 +2112,7 @@ func (x *ListChangesRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListChangesRequest.ProtoReflect.Descriptor instead.
 func (*ListChangesRequest) Descriptor() ([]byte, []int) {
-	return file_cards_v2_card_proto_rawDescGZIP(), []int{24}
+	return file_cards_v2_card_proto_rawDescGZIP(), []int{27}
 }
 
 func (x *ListChangesRequest) GetFilter() *Filter {
@@ -1848,7 +2139,7 @@ type ListChangesResponse struct {
 
 func (x *ListChangesResponse) Reset() {
 	*x = ListChangesResponse{}
-	mi := &file_cards_v2_card_proto_msgTypes[25]
+	mi := &file_cards_v2_card_proto_msgTypes[28]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1860,7 +2151,7 @@ func (x *ListChangesResponse) String() string {
 func (*ListChangesResponse) ProtoMessage() {}
 
 func (x *ListChangesResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_cards_v2_card_proto_msgTypes[25]
+	mi := &file_cards_v2_card_proto_msgTypes[28]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1873,7 +2164,7 @@ func (x *ListChangesResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListChangesResponse.ProtoReflect.Descriptor instead.
 func (*ListChangesResponse) Descriptor() ([]byte, []int) {
-	return file_cards_v2_card_proto_rawDescGZIP(), []int{25}
+	return file_cards_v2_card_proto_rawDescGZIP(), []int{28}
 }
 
 func (x *ListChangesResponse) GetChanges() []*CardChange {
@@ -1915,7 +2206,7 @@ type CardChange struct {
 
 func (x *CardChange) Reset() {
 	*x = CardChange{}
-	mi := &file_cards_v2_card_proto_msgTypes[26]
+	mi := &file_cards_v2_card_proto_msgTypes[29]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1927,7 +2218,7 @@ func (x *CardChange) String() string {
 func (*CardChange) ProtoMessage() {}
 
 func (x *CardChange) ProtoReflect() protoreflect.Message {
-	mi := &file_cards_v2_card_proto_msgTypes[26]
+	mi := &file_cards_v2_card_proto_msgTypes[29]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1940,7 +2231,7 @@ func (x *CardChange) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CardChange.ProtoReflect.Descriptor instead.
 func (*CardChange) Descriptor() ([]byte, []int) {
-	return file_cards_v2_card_proto_rawDescGZIP(), []int{26}
+	return file_cards_v2_card_proto_rawDescGZIP(), []int{29}
 }
 
 func (x *CardChange) GetId() string {
@@ -2116,11 +2407,34 @@ const file_cards_v2_card_proto_rawDesc = "" +
 	"\xbaH\a\x82\x01\x04\x10\x01 \x00R\x06action\x12(\n" +
 	"\x06limits\x18\x03 \x01(\v2\x10.cards.v2.LimitsR\x06limits\x12\x16\n" +
 	"\x06labels\x18\x04 \x03(\tR\x06labels\x12\x16\n" +
-	"\x06reason\x18\x05 \x01(\tR\x06reason\"w\n" +
+	"\x06reason\x18\x05 \x01(\tR\x06reason\"\xb6\x01\n" +
 	"\fBulkResponse\x12\x1c\n" +
 	"\tsucceeded\x18\x01 \x01(\x05R\tsucceeded\x12\x16\n" +
 	"\x06failed\x18\x02 \x01(\x05R\x06failed\x121\n" +
-	"\bfailures\x18\x03 \x03(\v2\x15.cards.v2.BulkFailureR\bfailures\"X\n" +
+	"\bfailures\x18\x03 \x03(\v2\x15.cards.v2.BulkFailureR\bfailures\x12!\n" +
+	"\foperation_id\x18\x04 \x01(\tR\voperationId\x12\x1a\n" +
+	"\bselected\x18\x05 \x01(\x05R\bselected\"E\n" +
+	"\x17GetBulkOperationRequest\x12*\n" +
+	"\foperation_id\x18\x01 \x01(\tB\a\xbaH\x04r\x02\x10\x01R\voperationId\"Q\n" +
+	"\x18GetBulkOperationResponse\x125\n" +
+	"\toperation\x18\x01 \x01(\v2\x17.cards.v2.BulkOperationR\toperation\"\xd5\x03\n" +
+	"\rBulkOperation\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12,\n" +
+	"\x06action\x18\x02 \x01(\x0e2\x14.cards.v2.BulkActionR\x06action\x122\n" +
+	"\x05state\x18\x03 \x01(\x0e2\x1c.cards.v2.BulkOperationStateR\x05state\x12\x14\n" +
+	"\x05total\x18\x04 \x01(\x05R\x05total\x12\x12\n" +
+	"\x04done\x18\x05 \x01(\x05R\x04done\x12\x1c\n" +
+	"\tsucceeded\x18\x06 \x01(\x05R\tsucceeded\x12\x16\n" +
+	"\x06failed\x18\a \x01(\x05R\x06failed\x121\n" +
+	"\bfailures\x18\b \x03(\v2\x15.cards.v2.BulkFailureR\bfailures\x122\n" +
+	"\n" +
+	"started_by\x18\t \x01(\v2\x13.cards.v2.PrincipalR\tstartedBy\x129\n" +
+	"\n" +
+	"started_at\x18\n" +
+	" \x01(\v2\x1a.google.protobuf.TimestampR\tstartedAt\x12@\n" +
+	"\vfinished_at\x18\v \x01(\v2\x1a.google.protobuf.TimestampH\x00R\n" +
+	"finishedAt\x88\x01\x01B\x0e\n" +
+	"\f_finished_at\"X\n" +
 	"\vBulkFailure\x12\x17\n" +
 	"\acard_id\x18\x01 \x01(\tR\x06cardId\x12\x16\n" +
 	"\x06reason\x18\x02 \x01(\tR\x06reason\x12\x18\n" +
@@ -2169,7 +2483,12 @@ const file_cards_v2_card_proto_rawDesc = "" +
 	"\x11BULK_ACTION_CLOSE\x10\x03\x12\x1a\n" +
 	"\x16BULK_ACTION_SET_LIMITS\x10\x04\x12\x1a\n" +
 	"\x16BULK_ACTION_ADD_LABELS\x10\x05\x12\x1d\n" +
-	"\x19BULK_ACTION_REMOVE_LABELS\x10\x062\xf2\x04\n" +
+	"\x19BULK_ACTION_REMOVE_LABELS\x10\x06*\x9c\x01\n" +
+	"\x12BulkOperationState\x12$\n" +
+	" BULK_OPERATION_STATE_UNSPECIFIED\x10\x00\x12 \n" +
+	"\x1cBULK_OPERATION_STATE_RUNNING\x10\x01\x12\x1d\n" +
+	"\x19BULK_OPERATION_STATE_DONE\x10\x02\x12\x1f\n" +
+	"\x1bBULK_OPERATION_STATE_FAILED\x10\x032\xcd\x05\n" +
 	"\vCardService\x128\n" +
 	"\x05Issue\x12\x16.cards.v2.IssueRequest\x1a\x17.cards.v2.IssueResponse\x122\n" +
 	"\x03Get\x12\x14.cards.v2.GetRequest\x1a\x15.cards.v2.GetResponse\x125\n" +
@@ -2178,7 +2497,8 @@ const file_cards_v2_card_proto_rawDesc = "" +
 	"\x05Pause\x12\x16.cards.v2.PauseRequest\x1a\x17.cards.v2.PauseResponse\x12;\n" +
 	"\x06Resume\x12\x17.cards.v2.ResumeRequest\x1a\x18.cards.v2.ResumeResponse\x128\n" +
 	"\x05Close\x12\x16.cards.v2.CloseRequest\x1a\x17.cards.v2.CloseResponse\x125\n" +
-	"\x04Bulk\x12\x15.cards.v2.BulkRequest\x1a\x16.cards.v2.BulkResponse\x12M\n" +
+	"\x04Bulk\x12\x15.cards.v2.BulkRequest\x1a\x16.cards.v2.BulkResponse\x12Y\n" +
+	"\x10GetBulkOperation\x12!.cards.v2.GetBulkOperationRequest\x1a\".cards.v2.GetBulkOperationResponse\x12M\n" +
 	"\fRevealNumber\x12\x1d.cards.v2.RevealNumberRequest\x1a\x1e.cards.v2.RevealNumberResponse\x12J\n" +
 	"\vListChanges\x12\x1c.cards.v2.ListChangesRequest\x1a\x1d.cards.v2.ListChangesResponseB\xa7\x01\n" +
 	"\fcom.cards.v2B\tCardProtoP\x01ZKgithub.com/fox1ck-org/vibe-cards-client/v2/conformance/gen/cards/v2;cardsv2\xa2\x02\x03CXX\xaa\x02\bCards.V2\xca\x02\bCards\\V2\xe2\x02\x14Cards\\V2\\GPBMetadata\xea\x02\tCards::V2b\x06proto3"
@@ -2195,117 +2515,130 @@ func file_cards_v2_card_proto_rawDescGZIP() []byte {
 	return file_cards_v2_card_proto_rawDescData
 }
 
-var file_cards_v2_card_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_cards_v2_card_proto_msgTypes = make([]protoimpl.MessageInfo, 27)
+var file_cards_v2_card_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
+var file_cards_v2_card_proto_msgTypes = make([]protoimpl.MessageInfo, 30)
 var file_cards_v2_card_proto_goTypes = []any{
-	(BulkAction)(0),               // 0: cards.v2.BulkAction
-	(*Card)(nil),                  // 1: cards.v2.Card
-	(*Limits)(nil),                // 2: cards.v2.Limits
-	(*Holding)(nil),               // 3: cards.v2.Holding
-	(*Usage)(nil),                 // 4: cards.v2.Usage
-	(*IssueRequest)(nil),          // 5: cards.v2.IssueRequest
-	(*IssueResponse)(nil),         // 6: cards.v2.IssueResponse
-	(*GetRequest)(nil),            // 7: cards.v2.GetRequest
-	(*GetResponse)(nil),           // 8: cards.v2.GetResponse
-	(*ListRequest)(nil),           // 9: cards.v2.ListRequest
-	(*ListResponse)(nil),          // 10: cards.v2.ListResponse
-	(*UpdateRequest)(nil),         // 11: cards.v2.UpdateRequest
-	(*UpdateResponse)(nil),        // 12: cards.v2.UpdateResponse
-	(*PauseRequest)(nil),          // 13: cards.v2.PauseRequest
-	(*PauseResponse)(nil),         // 14: cards.v2.PauseResponse
-	(*ResumeRequest)(nil),         // 15: cards.v2.ResumeRequest
-	(*ResumeResponse)(nil),        // 16: cards.v2.ResumeResponse
-	(*CloseRequest)(nil),          // 17: cards.v2.CloseRequest
-	(*CloseResponse)(nil),         // 18: cards.v2.CloseResponse
-	(*BulkRequest)(nil),           // 19: cards.v2.BulkRequest
-	(*BulkResponse)(nil),          // 20: cards.v2.BulkResponse
-	(*BulkFailure)(nil),           // 21: cards.v2.BulkFailure
-	(*RevealNumberRequest)(nil),   // 22: cards.v2.RevealNumberRequest
-	(*RevealNumberResponse)(nil),  // 23: cards.v2.RevealNumberResponse
-	(*HolderData)(nil),            // 24: cards.v2.HolderData
-	(*ListChangesRequest)(nil),    // 25: cards.v2.ListChangesRequest
-	(*ListChangesResponse)(nil),   // 26: cards.v2.ListChangesResponse
-	(*CardChange)(nil),            // 27: cards.v2.CardChange
-	(CardStatus)(0),               // 28: cards.v2.CardStatus
-	(*Principal)(nil),             // 29: cards.v2.Principal
-	(*Money)(nil),                 // 30: cards.v2.Money
-	(*timestamppb.Timestamp)(nil), // 31: google.protobuf.Timestamp
-	(*Filter)(nil),                // 32: cards.v2.Filter
-	(*PageRequest)(nil),           // 33: cards.v2.PageRequest
-	(*PageResponse)(nil),          // 34: cards.v2.PageResponse
+	(BulkAction)(0),                  // 0: cards.v2.BulkAction
+	(BulkOperationState)(0),          // 1: cards.v2.BulkOperationState
+	(*Card)(nil),                     // 2: cards.v2.Card
+	(*Limits)(nil),                   // 3: cards.v2.Limits
+	(*Holding)(nil),                  // 4: cards.v2.Holding
+	(*Usage)(nil),                    // 5: cards.v2.Usage
+	(*IssueRequest)(nil),             // 6: cards.v2.IssueRequest
+	(*IssueResponse)(nil),            // 7: cards.v2.IssueResponse
+	(*GetRequest)(nil),               // 8: cards.v2.GetRequest
+	(*GetResponse)(nil),              // 9: cards.v2.GetResponse
+	(*ListRequest)(nil),              // 10: cards.v2.ListRequest
+	(*ListResponse)(nil),             // 11: cards.v2.ListResponse
+	(*UpdateRequest)(nil),            // 12: cards.v2.UpdateRequest
+	(*UpdateResponse)(nil),           // 13: cards.v2.UpdateResponse
+	(*PauseRequest)(nil),             // 14: cards.v2.PauseRequest
+	(*PauseResponse)(nil),            // 15: cards.v2.PauseResponse
+	(*ResumeRequest)(nil),            // 16: cards.v2.ResumeRequest
+	(*ResumeResponse)(nil),           // 17: cards.v2.ResumeResponse
+	(*CloseRequest)(nil),             // 18: cards.v2.CloseRequest
+	(*CloseResponse)(nil),            // 19: cards.v2.CloseResponse
+	(*BulkRequest)(nil),              // 20: cards.v2.BulkRequest
+	(*BulkResponse)(nil),             // 21: cards.v2.BulkResponse
+	(*GetBulkOperationRequest)(nil),  // 22: cards.v2.GetBulkOperationRequest
+	(*GetBulkOperationResponse)(nil), // 23: cards.v2.GetBulkOperationResponse
+	(*BulkOperation)(nil),            // 24: cards.v2.BulkOperation
+	(*BulkFailure)(nil),              // 25: cards.v2.BulkFailure
+	(*RevealNumberRequest)(nil),      // 26: cards.v2.RevealNumberRequest
+	(*RevealNumberResponse)(nil),     // 27: cards.v2.RevealNumberResponse
+	(*HolderData)(nil),               // 28: cards.v2.HolderData
+	(*ListChangesRequest)(nil),       // 29: cards.v2.ListChangesRequest
+	(*ListChangesResponse)(nil),      // 30: cards.v2.ListChangesResponse
+	(*CardChange)(nil),               // 31: cards.v2.CardChange
+	(CardStatus)(0),                  // 32: cards.v2.CardStatus
+	(*Principal)(nil),                // 33: cards.v2.Principal
+	(*Money)(nil),                    // 34: cards.v2.Money
+	(*timestamppb.Timestamp)(nil),    // 35: google.protobuf.Timestamp
+	(*Filter)(nil),                   // 36: cards.v2.Filter
+	(*PageRequest)(nil),              // 37: cards.v2.PageRequest
+	(*PageResponse)(nil),             // 38: cards.v2.PageResponse
 }
 var file_cards_v2_card_proto_depIdxs = []int32{
-	28, // 0: cards.v2.Card.status:type_name -> cards.v2.CardStatus
-	29, // 1: cards.v2.Card.owner:type_name -> cards.v2.Principal
-	3,  // 2: cards.v2.Card.holder:type_name -> cards.v2.Holding
-	2,  // 3: cards.v2.Card.limits:type_name -> cards.v2.Limits
-	30, // 4: cards.v2.Card.spent_total:type_name -> cards.v2.Money
-	30, // 5: cards.v2.Card.spent_today:type_name -> cards.v2.Money
-	4,  // 6: cards.v2.Card.usages:type_name -> cards.v2.Usage
-	31, // 7: cards.v2.Card.created_at:type_name -> google.protobuf.Timestamp
-	31, // 8: cards.v2.Card.updated_at:type_name -> google.protobuf.Timestamp
-	30, // 9: cards.v2.Card.daily_limit:type_name -> cards.v2.Money
-	3,  // 10: cards.v2.Card.last_holding:type_name -> cards.v2.Holding
-	30, // 11: cards.v2.Limits.total:type_name -> cards.v2.Money
-	30, // 12: cards.v2.Limits.per_txn:type_name -> cards.v2.Money
-	29, // 13: cards.v2.Holding.holder:type_name -> cards.v2.Principal
-	29, // 14: cards.v2.Holding.taken_by:type_name -> cards.v2.Principal
-	31, // 15: cards.v2.Holding.from:type_name -> google.protobuf.Timestamp
-	31, // 16: cards.v2.Holding.to:type_name -> google.protobuf.Timestamp
-	29, // 17: cards.v2.Usage.added_by:type_name -> cards.v2.Principal
-	31, // 18: cards.v2.Usage.added_at:type_name -> google.protobuf.Timestamp
-	29, // 19: cards.v2.Usage.on_behalf_of:type_name -> cards.v2.Principal
-	29, // 20: cards.v2.IssueRequest.owner:type_name -> cards.v2.Principal
-	2,  // 21: cards.v2.IssueRequest.limits:type_name -> cards.v2.Limits
-	1,  // 22: cards.v2.IssueResponse.cards:type_name -> cards.v2.Card
-	1,  // 23: cards.v2.GetResponse.card:type_name -> cards.v2.Card
-	32, // 24: cards.v2.ListRequest.filter:type_name -> cards.v2.Filter
-	33, // 25: cards.v2.ListRequest.page:type_name -> cards.v2.PageRequest
-	1,  // 26: cards.v2.ListResponse.cards:type_name -> cards.v2.Card
-	34, // 27: cards.v2.ListResponse.page:type_name -> cards.v2.PageResponse
-	2,  // 28: cards.v2.UpdateRequest.limits:type_name -> cards.v2.Limits
-	1,  // 29: cards.v2.UpdateResponse.card:type_name -> cards.v2.Card
-	1,  // 30: cards.v2.PauseResponse.card:type_name -> cards.v2.Card
-	1,  // 31: cards.v2.ResumeResponse.card:type_name -> cards.v2.Card
-	1,  // 32: cards.v2.CloseResponse.card:type_name -> cards.v2.Card
-	32, // 33: cards.v2.BulkRequest.filter:type_name -> cards.v2.Filter
+	32, // 0: cards.v2.Card.status:type_name -> cards.v2.CardStatus
+	33, // 1: cards.v2.Card.owner:type_name -> cards.v2.Principal
+	4,  // 2: cards.v2.Card.holder:type_name -> cards.v2.Holding
+	3,  // 3: cards.v2.Card.limits:type_name -> cards.v2.Limits
+	34, // 4: cards.v2.Card.spent_total:type_name -> cards.v2.Money
+	34, // 5: cards.v2.Card.spent_today:type_name -> cards.v2.Money
+	5,  // 6: cards.v2.Card.usages:type_name -> cards.v2.Usage
+	35, // 7: cards.v2.Card.created_at:type_name -> google.protobuf.Timestamp
+	35, // 8: cards.v2.Card.updated_at:type_name -> google.protobuf.Timestamp
+	34, // 9: cards.v2.Card.daily_limit:type_name -> cards.v2.Money
+	4,  // 10: cards.v2.Card.last_holding:type_name -> cards.v2.Holding
+	34, // 11: cards.v2.Limits.total:type_name -> cards.v2.Money
+	34, // 12: cards.v2.Limits.per_txn:type_name -> cards.v2.Money
+	33, // 13: cards.v2.Holding.holder:type_name -> cards.v2.Principal
+	33, // 14: cards.v2.Holding.taken_by:type_name -> cards.v2.Principal
+	35, // 15: cards.v2.Holding.from:type_name -> google.protobuf.Timestamp
+	35, // 16: cards.v2.Holding.to:type_name -> google.protobuf.Timestamp
+	33, // 17: cards.v2.Usage.added_by:type_name -> cards.v2.Principal
+	35, // 18: cards.v2.Usage.added_at:type_name -> google.protobuf.Timestamp
+	33, // 19: cards.v2.Usage.on_behalf_of:type_name -> cards.v2.Principal
+	33, // 20: cards.v2.IssueRequest.owner:type_name -> cards.v2.Principal
+	3,  // 21: cards.v2.IssueRequest.limits:type_name -> cards.v2.Limits
+	2,  // 22: cards.v2.IssueResponse.cards:type_name -> cards.v2.Card
+	2,  // 23: cards.v2.GetResponse.card:type_name -> cards.v2.Card
+	36, // 24: cards.v2.ListRequest.filter:type_name -> cards.v2.Filter
+	37, // 25: cards.v2.ListRequest.page:type_name -> cards.v2.PageRequest
+	2,  // 26: cards.v2.ListResponse.cards:type_name -> cards.v2.Card
+	38, // 27: cards.v2.ListResponse.page:type_name -> cards.v2.PageResponse
+	3,  // 28: cards.v2.UpdateRequest.limits:type_name -> cards.v2.Limits
+	2,  // 29: cards.v2.UpdateResponse.card:type_name -> cards.v2.Card
+	2,  // 30: cards.v2.PauseResponse.card:type_name -> cards.v2.Card
+	2,  // 31: cards.v2.ResumeResponse.card:type_name -> cards.v2.Card
+	2,  // 32: cards.v2.CloseResponse.card:type_name -> cards.v2.Card
+	36, // 33: cards.v2.BulkRequest.filter:type_name -> cards.v2.Filter
 	0,  // 34: cards.v2.BulkRequest.action:type_name -> cards.v2.BulkAction
-	2,  // 35: cards.v2.BulkRequest.limits:type_name -> cards.v2.Limits
-	21, // 36: cards.v2.BulkResponse.failures:type_name -> cards.v2.BulkFailure
-	24, // 37: cards.v2.RevealNumberResponse.holder:type_name -> cards.v2.HolderData
-	31, // 38: cards.v2.RevealNumberResponse.visible_until:type_name -> google.protobuf.Timestamp
-	32, // 39: cards.v2.ListChangesRequest.filter:type_name -> cards.v2.Filter
-	33, // 40: cards.v2.ListChangesRequest.page:type_name -> cards.v2.PageRequest
-	27, // 41: cards.v2.ListChangesResponse.changes:type_name -> cards.v2.CardChange
-	34, // 42: cards.v2.ListChangesResponse.page:type_name -> cards.v2.PageResponse
-	29, // 43: cards.v2.CardChange.actor:type_name -> cards.v2.Principal
-	29, // 44: cards.v2.CardChange.on_behalf_of:type_name -> cards.v2.Principal
-	31, // 45: cards.v2.CardChange.at:type_name -> google.protobuf.Timestamp
-	5,  // 46: cards.v2.CardService.Issue:input_type -> cards.v2.IssueRequest
-	7,  // 47: cards.v2.CardService.Get:input_type -> cards.v2.GetRequest
-	9,  // 48: cards.v2.CardService.List:input_type -> cards.v2.ListRequest
-	11, // 49: cards.v2.CardService.Update:input_type -> cards.v2.UpdateRequest
-	13, // 50: cards.v2.CardService.Pause:input_type -> cards.v2.PauseRequest
-	15, // 51: cards.v2.CardService.Resume:input_type -> cards.v2.ResumeRequest
-	17, // 52: cards.v2.CardService.Close:input_type -> cards.v2.CloseRequest
-	19, // 53: cards.v2.CardService.Bulk:input_type -> cards.v2.BulkRequest
-	22, // 54: cards.v2.CardService.RevealNumber:input_type -> cards.v2.RevealNumberRequest
-	25, // 55: cards.v2.CardService.ListChanges:input_type -> cards.v2.ListChangesRequest
-	6,  // 56: cards.v2.CardService.Issue:output_type -> cards.v2.IssueResponse
-	8,  // 57: cards.v2.CardService.Get:output_type -> cards.v2.GetResponse
-	10, // 58: cards.v2.CardService.List:output_type -> cards.v2.ListResponse
-	12, // 59: cards.v2.CardService.Update:output_type -> cards.v2.UpdateResponse
-	14, // 60: cards.v2.CardService.Pause:output_type -> cards.v2.PauseResponse
-	16, // 61: cards.v2.CardService.Resume:output_type -> cards.v2.ResumeResponse
-	18, // 62: cards.v2.CardService.Close:output_type -> cards.v2.CloseResponse
-	20, // 63: cards.v2.CardService.Bulk:output_type -> cards.v2.BulkResponse
-	23, // 64: cards.v2.CardService.RevealNumber:output_type -> cards.v2.RevealNumberResponse
-	26, // 65: cards.v2.CardService.ListChanges:output_type -> cards.v2.ListChangesResponse
-	56, // [56:66] is the sub-list for method output_type
-	46, // [46:56] is the sub-list for method input_type
-	46, // [46:46] is the sub-list for extension type_name
-	46, // [46:46] is the sub-list for extension extendee
-	0,  // [0:46] is the sub-list for field type_name
+	3,  // 35: cards.v2.BulkRequest.limits:type_name -> cards.v2.Limits
+	25, // 36: cards.v2.BulkResponse.failures:type_name -> cards.v2.BulkFailure
+	24, // 37: cards.v2.GetBulkOperationResponse.operation:type_name -> cards.v2.BulkOperation
+	0,  // 38: cards.v2.BulkOperation.action:type_name -> cards.v2.BulkAction
+	1,  // 39: cards.v2.BulkOperation.state:type_name -> cards.v2.BulkOperationState
+	25, // 40: cards.v2.BulkOperation.failures:type_name -> cards.v2.BulkFailure
+	33, // 41: cards.v2.BulkOperation.started_by:type_name -> cards.v2.Principal
+	35, // 42: cards.v2.BulkOperation.started_at:type_name -> google.protobuf.Timestamp
+	35, // 43: cards.v2.BulkOperation.finished_at:type_name -> google.protobuf.Timestamp
+	28, // 44: cards.v2.RevealNumberResponse.holder:type_name -> cards.v2.HolderData
+	35, // 45: cards.v2.RevealNumberResponse.visible_until:type_name -> google.protobuf.Timestamp
+	36, // 46: cards.v2.ListChangesRequest.filter:type_name -> cards.v2.Filter
+	37, // 47: cards.v2.ListChangesRequest.page:type_name -> cards.v2.PageRequest
+	31, // 48: cards.v2.ListChangesResponse.changes:type_name -> cards.v2.CardChange
+	38, // 49: cards.v2.ListChangesResponse.page:type_name -> cards.v2.PageResponse
+	33, // 50: cards.v2.CardChange.actor:type_name -> cards.v2.Principal
+	33, // 51: cards.v2.CardChange.on_behalf_of:type_name -> cards.v2.Principal
+	35, // 52: cards.v2.CardChange.at:type_name -> google.protobuf.Timestamp
+	6,  // 53: cards.v2.CardService.Issue:input_type -> cards.v2.IssueRequest
+	8,  // 54: cards.v2.CardService.Get:input_type -> cards.v2.GetRequest
+	10, // 55: cards.v2.CardService.List:input_type -> cards.v2.ListRequest
+	12, // 56: cards.v2.CardService.Update:input_type -> cards.v2.UpdateRequest
+	14, // 57: cards.v2.CardService.Pause:input_type -> cards.v2.PauseRequest
+	16, // 58: cards.v2.CardService.Resume:input_type -> cards.v2.ResumeRequest
+	18, // 59: cards.v2.CardService.Close:input_type -> cards.v2.CloseRequest
+	20, // 60: cards.v2.CardService.Bulk:input_type -> cards.v2.BulkRequest
+	22, // 61: cards.v2.CardService.GetBulkOperation:input_type -> cards.v2.GetBulkOperationRequest
+	26, // 62: cards.v2.CardService.RevealNumber:input_type -> cards.v2.RevealNumberRequest
+	29, // 63: cards.v2.CardService.ListChanges:input_type -> cards.v2.ListChangesRequest
+	7,  // 64: cards.v2.CardService.Issue:output_type -> cards.v2.IssueResponse
+	9,  // 65: cards.v2.CardService.Get:output_type -> cards.v2.GetResponse
+	11, // 66: cards.v2.CardService.List:output_type -> cards.v2.ListResponse
+	13, // 67: cards.v2.CardService.Update:output_type -> cards.v2.UpdateResponse
+	15, // 68: cards.v2.CardService.Pause:output_type -> cards.v2.PauseResponse
+	17, // 69: cards.v2.CardService.Resume:output_type -> cards.v2.ResumeResponse
+	19, // 70: cards.v2.CardService.Close:output_type -> cards.v2.CloseResponse
+	21, // 71: cards.v2.CardService.Bulk:output_type -> cards.v2.BulkResponse
+	23, // 72: cards.v2.CardService.GetBulkOperation:output_type -> cards.v2.GetBulkOperationResponse
+	27, // 73: cards.v2.CardService.RevealNumber:output_type -> cards.v2.RevealNumberResponse
+	30, // 74: cards.v2.CardService.ListChanges:output_type -> cards.v2.ListChangesResponse
+	64, // [64:75] is the sub-list for method output_type
+	53, // [53:64] is the sub-list for method input_type
+	53, // [53:53] is the sub-list for extension type_name
+	53, // [53:53] is the sub-list for extension extendee
+	0,  // [0:53] is the sub-list for field type_name
 }
 
 func init() { file_cards_v2_card_proto_init() }
@@ -2319,14 +2652,15 @@ func file_cards_v2_card_proto_init() {
 	file_cards_v2_card_proto_msgTypes[2].OneofWrappers = []any{}
 	file_cards_v2_card_proto_msgTypes[3].OneofWrappers = []any{}
 	file_cards_v2_card_proto_msgTypes[10].OneofWrappers = []any{}
-	file_cards_v2_card_proto_msgTypes[26].OneofWrappers = []any{}
+	file_cards_v2_card_proto_msgTypes[22].OneofWrappers = []any{}
+	file_cards_v2_card_proto_msgTypes[29].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_cards_v2_card_proto_rawDesc), len(file_cards_v2_card_proto_rawDesc)),
-			NumEnums:      1,
-			NumMessages:   27,
+			NumEnums:      2,
+			NumMessages:   30,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

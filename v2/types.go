@@ -78,8 +78,8 @@ func Service(id string) Principal { return Principal{Kind: PrincipalService, ID:
 
 // Filter values with a meaning of their own.
 const (
-	// Me is the caller — for a service, the service itself, also under
-	// OnBehalfOf.
+	// Me is the caller — for a service under OnBehalfOf, the person it acts
+	// for (vibe-cards since К1-3b); for a service on its own, the service.
 	Me = "me"
 	// Nobody, in Filter.Holder, is a card nobody holds.
 	Nobody = "none"
@@ -105,6 +105,12 @@ type Filter struct {
 	Query            string   `json:"query,omitempty"`
 	CardIDs          []string `json:"cardIds,omitempty"`
 	IssuerAccountIDs []string `json:"issuerAccountIds,omitempty"`
+	// Cards with a live usage of this client application (Usage.App) —
+	// "which cards work for my things?".
+	UsageApp string `json:"usageApp,omitempty"`
+	// With UsageApp: the card(s) working for this one thing of it
+	// (Usage.ExternalID). Without UsageApp the server refuses it.
+	UsageExternalID string `json:"usageExternalId,omitempty"`
 }
 
 // Page asks for one page of a list. Zero values are the server's defaults.

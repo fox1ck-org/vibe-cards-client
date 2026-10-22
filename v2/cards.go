@@ -151,12 +151,22 @@ type BulkInput struct {
 	Reason string     `json:"reason,omitempty"`
 }
 
-// BulkResult counts what happened; one card's refusal does not stop the rest.
+// BulkResult counts what happened; one card's refusal does not stop the
+// rest. When the filter selected more cards than one call applies (1000),
+// the cards are worked through in the background: OperationID is set,
+// Succeeded and Failed are 0, and GetBulkOperation follows it.
 type BulkResult struct {
 	Succeeded int32         `json:"succeeded"`
 	Failed    int32         `json:"failed"`
 	Failures  []BulkFailure `json:"failures"`
+	// Set when the bulk runs in the background.
+	OperationID string `json:"operationId"`
+	// How many cards the filter selected.
+	Selected int32 `json:"selected"`
 }
+
+// Background reports whether the bulk runs in the background.
+func (r *BulkResult) Background() bool { return r != nil && r.OperationID != "" }
 
 // BulkFailure is one card's refusal.
 type BulkFailure struct {
@@ -172,6 +182,37 @@ func (c *Client) Bulk(ctx context.Context, in BulkInput) (*BulkResult, error) {
 		return nil, err
 	}
 	return &out, nil
+}
+
+// BulkOperation is a Bulk running in the background.
+type BulkOperation struct {
+	ID     string             `json:"id"`
+	Action BulkAction         `json:"action"`
+	State  BulkOperationState `json:"state"`
+	// The cards selected when it started.
+	Total int32 `json:"total"`
+	// Tried so far: Succeeded + Failed.
+	Done      int32 `json:"done"`
+	Succeeded int32 `json:"succeeded"`
+	Failed    int32 `json:"failed"`
+	// The first refusals (at most 200); Failed counts them all.
+	Failures   []BulkFailure `json:"failures"`
+	StartedBy  Principal     `json:"startedBy"`
+	StartedAt  time.Time     `json:"startedAt"`
+	FinishedAt *time.Time    `json:"finishedAt,omitempty"`
+}
+
+// GetBulkOperation follows a background Bulk. Only whoever started it (the
+// person, under OnBehalfOf) or an admin reads it; anybody else gets
+// ErrNotFound.
+func (c *Client) GetBulkOperation(ctx context.Context, operationID string) (*BulkOperation, error) {
+	var out struct {
+		Operation *BulkOperation `json:"operation"`
+	}
+	if err := c.call(ctx, cardService+"GetBulkOperation", map[string]string{"operationId": operationID}, &out, false); err != nil {
+		return nil, err
+	}
+	return out.Operation, nil
 }
 
 // RevealedNumber is a card's number shown to a PERSON, on the record.

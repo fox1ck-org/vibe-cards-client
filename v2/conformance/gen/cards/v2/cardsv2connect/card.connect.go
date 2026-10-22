@@ -49,6 +49,9 @@ const (
 	CardServiceCloseProcedure = "/cards.v2.CardService/Close"
 	// CardServiceBulkProcedure is the fully-qualified name of the CardService's Bulk RPC.
 	CardServiceBulkProcedure = "/cards.v2.CardService/Bulk"
+	// CardServiceGetBulkOperationProcedure is the fully-qualified name of the CardService's
+	// GetBulkOperation RPC.
+	CardServiceGetBulkOperationProcedure = "/cards.v2.CardService/GetBulkOperation"
 	// CardServiceRevealNumberProcedure is the fully-qualified name of the CardService's RevealNumber
 	// RPC.
 	CardServiceRevealNumberProcedure = "/cards.v2.CardService/RevealNumber"
@@ -92,7 +95,16 @@ type CardServiceClient interface {
 	// selects ("freeze all my cards" is Bulk with owner = me and PAUSE). Each
 	// card is checked as if it were the only one; one card's refusal does not
 	// stop the rest.
+	//
+	// Up to 1000 selected cards the call applies the action and answers the
+	// outcome. Beyond that ("pause every card labelled uk" in an organisation
+	// of thousands) the cards are worked through in the background: the
+	// answer carries `operation_id`, and GetBulkOperation follows it.
 	Bulk(context.Context, *connect.Request[v2.BulkRequest]) (*connect.Response[v2.BulkResponse], error)
+	// GetBulkOperation follows a Bulk that runs in the background: how many
+	// cards are done, how many were refused and why. Only whoever started it,
+	// or an admin, reads it; anybody else is answered ERROR_REASON_NOT_FOUND.
+	GetBulkOperation(context.Context, *connect.Request[v2.GetBulkOperationRequest]) (*connect.Response[v2.GetBulkOperationResponse], error)
 	// RevealNumber shows one card's number to a PERSON, never to a service (a
 	// service gets a ticket from PanService). The guarantees: a card the
 	// caller can see, and — for a member — owns, holds or was given for USE or
@@ -168,6 +180,12 @@ func NewCardServiceClient(httpClient connect.HTTPClient, baseURL string, opts ..
 			connect.WithSchema(cardServiceMethods.ByName("Bulk")),
 			connect.WithClientOptions(opts...),
 		),
+		getBulkOperation: connect.NewClient[v2.GetBulkOperationRequest, v2.GetBulkOperationResponse](
+			httpClient,
+			baseURL+CardServiceGetBulkOperationProcedure,
+			connect.WithSchema(cardServiceMethods.ByName("GetBulkOperation")),
+			connect.WithClientOptions(opts...),
+		),
 		revealNumber: connect.NewClient[v2.RevealNumberRequest, v2.RevealNumberResponse](
 			httpClient,
 			baseURL+CardServiceRevealNumberProcedure,
@@ -185,16 +203,17 @@ func NewCardServiceClient(httpClient connect.HTTPClient, baseURL string, opts ..
 
 // cardServiceClient implements CardServiceClient.
 type cardServiceClient struct {
-	issue        *connect.Client[v2.IssueRequest, v2.IssueResponse]
-	get          *connect.Client[v2.GetRequest, v2.GetResponse]
-	list         *connect.Client[v2.ListRequest, v2.ListResponse]
-	update       *connect.Client[v2.UpdateRequest, v2.UpdateResponse]
-	pause        *connect.Client[v2.PauseRequest, v2.PauseResponse]
-	resume       *connect.Client[v2.ResumeRequest, v2.ResumeResponse]
-	close        *connect.Client[v2.CloseRequest, v2.CloseResponse]
-	bulk         *connect.Client[v2.BulkRequest, v2.BulkResponse]
-	revealNumber *connect.Client[v2.RevealNumberRequest, v2.RevealNumberResponse]
-	listChanges  *connect.Client[v2.ListChangesRequest, v2.ListChangesResponse]
+	issue            *connect.Client[v2.IssueRequest, v2.IssueResponse]
+	get              *connect.Client[v2.GetRequest, v2.GetResponse]
+	list             *connect.Client[v2.ListRequest, v2.ListResponse]
+	update           *connect.Client[v2.UpdateRequest, v2.UpdateResponse]
+	pause            *connect.Client[v2.PauseRequest, v2.PauseResponse]
+	resume           *connect.Client[v2.ResumeRequest, v2.ResumeResponse]
+	close            *connect.Client[v2.CloseRequest, v2.CloseResponse]
+	bulk             *connect.Client[v2.BulkRequest, v2.BulkResponse]
+	getBulkOperation *connect.Client[v2.GetBulkOperationRequest, v2.GetBulkOperationResponse]
+	revealNumber     *connect.Client[v2.RevealNumberRequest, v2.RevealNumberResponse]
+	listChanges      *connect.Client[v2.ListChangesRequest, v2.ListChangesResponse]
 }
 
 // Issue calls cards.v2.CardService.Issue.
@@ -235,6 +254,11 @@ func (c *cardServiceClient) Close(ctx context.Context, req *connect.Request[v2.C
 // Bulk calls cards.v2.CardService.Bulk.
 func (c *cardServiceClient) Bulk(ctx context.Context, req *connect.Request[v2.BulkRequest]) (*connect.Response[v2.BulkResponse], error) {
 	return c.bulk.CallUnary(ctx, req)
+}
+
+// GetBulkOperation calls cards.v2.CardService.GetBulkOperation.
+func (c *cardServiceClient) GetBulkOperation(ctx context.Context, req *connect.Request[v2.GetBulkOperationRequest]) (*connect.Response[v2.GetBulkOperationResponse], error) {
+	return c.getBulkOperation.CallUnary(ctx, req)
 }
 
 // RevealNumber calls cards.v2.CardService.RevealNumber.
@@ -283,7 +307,16 @@ type CardServiceHandler interface {
 	// selects ("freeze all my cards" is Bulk with owner = me and PAUSE). Each
 	// card is checked as if it were the only one; one card's refusal does not
 	// stop the rest.
+	//
+	// Up to 1000 selected cards the call applies the action and answers the
+	// outcome. Beyond that ("pause every card labelled uk" in an organisation
+	// of thousands) the cards are worked through in the background: the
+	// answer carries `operation_id`, and GetBulkOperation follows it.
 	Bulk(context.Context, *connect.Request[v2.BulkRequest]) (*connect.Response[v2.BulkResponse], error)
+	// GetBulkOperation follows a Bulk that runs in the background: how many
+	// cards are done, how many were refused and why. Only whoever started it,
+	// or an admin, reads it; anybody else is answered ERROR_REASON_NOT_FOUND.
+	GetBulkOperation(context.Context, *connect.Request[v2.GetBulkOperationRequest]) (*connect.Response[v2.GetBulkOperationResponse], error)
 	// RevealNumber shows one card's number to a PERSON, never to a service (a
 	// service gets a ticket from PanService). The guarantees: a card the
 	// caller can see, and — for a member — owns, holds or was given for USE or
@@ -355,6 +388,12 @@ func NewCardServiceHandler(svc CardServiceHandler, opts ...connect.HandlerOption
 		connect.WithSchema(cardServiceMethods.ByName("Bulk")),
 		connect.WithHandlerOptions(opts...),
 	)
+	cardServiceGetBulkOperationHandler := connect.NewUnaryHandler(
+		CardServiceGetBulkOperationProcedure,
+		svc.GetBulkOperation,
+		connect.WithSchema(cardServiceMethods.ByName("GetBulkOperation")),
+		connect.WithHandlerOptions(opts...),
+	)
 	cardServiceRevealNumberHandler := connect.NewUnaryHandler(
 		CardServiceRevealNumberProcedure,
 		svc.RevealNumber,
@@ -385,6 +424,8 @@ func NewCardServiceHandler(svc CardServiceHandler, opts ...connect.HandlerOption
 			cardServiceCloseHandler.ServeHTTP(w, r)
 		case CardServiceBulkProcedure:
 			cardServiceBulkHandler.ServeHTTP(w, r)
+		case CardServiceGetBulkOperationProcedure:
+			cardServiceGetBulkOperationHandler.ServeHTTP(w, r)
 		case CardServiceRevealNumberProcedure:
 			cardServiceRevealNumberHandler.ServeHTTP(w, r)
 		case CardServiceListChangesProcedure:
@@ -428,6 +469,10 @@ func (UnimplementedCardServiceHandler) Close(context.Context, *connect.Request[v
 
 func (UnimplementedCardServiceHandler) Bulk(context.Context, *connect.Request[v2.BulkRequest]) (*connect.Response[v2.BulkResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("cards.v2.CardService.Bulk is not implemented"))
+}
+
+func (UnimplementedCardServiceHandler) GetBulkOperation(context.Context, *connect.Request[v2.GetBulkOperationRequest]) (*connect.Response[v2.GetBulkOperationResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("cards.v2.CardService.GetBulkOperation is not implemented"))
 }
 
 func (UnimplementedCardServiceHandler) RevealNumber(context.Context, *connect.Request[v2.RevealNumberRequest]) (*connect.Response[v2.RevealNumberResponse], error) {
