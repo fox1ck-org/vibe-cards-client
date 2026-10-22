@@ -231,3 +231,37 @@ func TestWaitThreeDSNothingArrivedIsNotAnError(t *testing.T) {
 		t.Fatalf("body %s", body)
 	}
 }
+
+func TestCanonicalOnBehalfHeaders(t *testing.T) {
+	rec := &recorder{handlers: map[string]func(string) (int, string){"/cards.v2.CardService/Get": func(string) (int, string) { return 200, `{"card":{"id":"c1"}}` }}}
+	srv := httptest.NewServer(rec)
+	defer srv.Close()
+	c := New(srv.URL, "")
+	ctx := WithToken(OnBehalfOf(context.Background(), "old-sub", "old@example.test"), "sa-token")
+	ctx = WithOnBehalf(ctx, "org", "canonical-sub")
+	if _, err := c.Get(ctx, "c1"); err != nil {
+		t.Fatal(err)
+	}
+	h := rec.headers[0]
+	if h.Get("Authorization") != "Bearer sa-token" || h.Get(HeaderOnBehalfOrg) != "org" || h.Get(HeaderOnBehalfSub) != "canonical-sub" || h.Get(HeaderActorSub) != "" || h.Get(HeaderActorEmail) != "" {
+		t.Fatalf("canonical headers: %v", h)
+	}
+	if _, err := c.Get(WithOnBehalf(ctx, "org", ""), "c1"); err != nil {
+		t.Fatal(err)
+	}
+	if rec.headers[1].Get(HeaderOnBehalfSub) != "" || rec.headers[1].Get(HeaderOnBehalfOrg) != "org" {
+		t.Fatal("org-only service work changed")
+	}
+	if _, err := c.Get(OnBehalfOf(ctx, "legacy", ""), "c1"); err != nil {
+		t.Fatal(err)
+	}
+	if rec.headers[2].Get(HeaderOnBehalfOrg) != "" || rec.headers[2].Get(HeaderActorSub) != "legacy" {
+		t.Fatal("mixed protocols")
+	}
+	if _, err := c.Get(WithOnBehalf(ctx, "", ""), "c1"); err == nil {
+		t.Fatal("empty org accepted")
+	}
+	if len(rec.headers) != 3 {
+		t.Fatal("invalid delegation reached server")
+	}
+}

@@ -189,3 +189,11 @@ issuing read access. `Card.IssuerAccountID` joins a card to an account.
 `Transaction.IssuerReference` is the issuer's stable operation identifier,
 available with OWN issuing read access and empty in PLATFORM mode or when
 unknown. Keep it distinct from `Transaction.ID`, the card service's identifier.
+
+Canonical service-account delegation uses `v2.WithToken(ctx, saToken)` and
+`v2.WithOnBehalf(ctx, orgID, canonicalPersonID)`. An empty person means org-scoped
+system work; the server still enforces the service's permissions. Resolve
+historical issuer-qualified subjects through the directory first. No role or
+email is supplied. The explicit delegation helper selected last replaces the
+other protocol's headers. Existing `OnBehalfOf` remains the legacy service-key
+protocol; enable canonical delegation only after the producer supports it.
