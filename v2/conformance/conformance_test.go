@@ -108,6 +108,7 @@ type fake struct {
 	cardsv2connect.UnimplementedPanServiceHandler
 	cardsv2connect.UnimplementedShareServiceHandler
 	cardsv2connect.UnimplementedSpendServiceHandler
+	cardsv2connect.UnimplementedIssuingServiceHandler
 
 	mu     sync.Mutex
 	cards  []*pb.Card
@@ -382,6 +383,7 @@ func newServer(t *testing.T, numeric bool) (*fake, *vibecards.Client) {
 	mux.Handle(cardsv2connect.NewPanServiceHandler(f, opts...))
 	mux.Handle(cardsv2connect.NewShareServiceHandler(f, opts...))
 	mux.Handle(cardsv2connect.NewSpendServiceHandler(f, opts...))
+	mux.Handle(cardsv2connect.NewIssuingServiceHandler(f, opts...))
 	srv := httptest.NewServer(mux)
 	t.Cleanup(srv.Close)
 	return f, vibecards.New(srv.URL, "vck_accounts")
@@ -611,11 +613,38 @@ func (f *fake) ListChanges(_ context.Context, req *connect.Request[pb.ListChange
 }
 
 func (f *fake) Bulk(_ context.Context, req *connect.Request[pb.BulkRequest]) (*connect.Response[pb.BulkResponse], error) {
-	if req.Msg.GetAction() != pb.BulkAction_BULK_ACTION_PAUSE || !slices.Equal(req.Msg.GetFilter().GetOwner(), []string{"me"}) {
+	if req.Msg.GetAction() != pb.BulkAction_BULK_ACTION_PAUSE {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("bulk"))
 	}
-	return connect.NewResponse(&pb.BulkResponse{Succeeded: 3, Failed: 1,
+	// The whole organisation's "uk" cards: more than one call applies.
+	if slices.Equal(req.Msg.GetFilter().GetLabels(), []string{"uk"}) {
+		return connect.NewResponse(&pb.BulkResponse{OperationId: "op-1", Selected: 4400}), nil
+	}
+	if !slices.Equal(req.Msg.GetFilter().GetOwner(), []string{"me"}) {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("bulk"))
+	}
+	return connect.NewResponse(&pb.BulkResponse{Succeeded: 3, Failed: 1, Selected: 4,
 		Failures: []*pb.BulkFailure{{CardId: "b", Reason: "issuer_unsupported", Message: "cannot pause"}}}), nil
+}
+
+func (f *fake) GetBulkOperation(_ context.Context, req *connect.Request[pb.GetBulkOperationRequest]) (*connect.Response[pb.GetBulkOperationResponse], error) {
+	if req.Msg.GetOperationId() != "op-1" {
+		return nil, reasonErr(connect.CodeNotFound, pb.ErrorReason_ERROR_REASON_NOT_FOUND, nil)
+	}
+	return connect.NewResponse(&pb.GetBulkOperationResponse{Operation: &pb.BulkOperation{
+		Id: "op-1", Action: pb.BulkAction_BULK_ACTION_PAUSE, State: pb.BulkOperationState_BULK_OPERATION_STATE_RUNNING,
+		Total: 4400, Done: 1025, Succeeded: 1024, Failed: 1,
+		Failures:  []*pb.BulkFailure{{CardId: "b", Reason: "not_allowed", Message: "not yours"}},
+		StartedBy: person("sub-admin"), StartedAt: timestamppb.New(time.Date(2026, 10, 22, 9, 0, 0, 0, time.UTC)),
+	}}), nil
+}
+
+func (f *fake) TopUp(_ context.Context, req *connect.Request[pb.TopUpRequest]) (*connect.Response[pb.TopUpResponse], error) {
+	m := req.Msg
+	if m.GetPerson().GetId() != "sub-buyer" || m.GetAmount().GetMinor() != 5000 || m.GetRequestId() == "" {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("top-up"))
+	}
+	return connect.NewResponse(&pb.TopUpResponse{Balance: &pb.Money{Minor: 12500, Currency: "USD"}}), nil
 }
 
 func (f *fake) ListShares(_ context.Context, req *connect.Request[pb.ListSharesRequest]) (*connect.Response[pb.ListSharesResponse], error) {
@@ -649,8 +678,25 @@ func TestEveryMethodSpeaksTheProto(t *testing.T) {
 		}
 		br, err := client.Bulk(ctx, vibecards.BulkInput{Filter: vibecards.Filter{Owner: []string{vibecards.Me}},
 			Action: vibecards.BulkPause, Reason: "freeze all mine"})
-		if err != nil || br.Succeeded != 3 || br.Failures[0].Reason != vibecards.ReasonIssuerUnsupported {
+		if err != nil || br.Succeeded != 3 || br.Selected != 4 || br.Background() || br.Failures[0].Reason != vibecards.ReasonIssuerUnsupported {
 			t.Fatalf("Bulk %+v %v", br, err)
+		}
+		bg, err := client.Bulk(ctx, vibecards.BulkInput{Filter: vibecards.Filter{Labels: []string{"uk"}}, Action: vibecards.BulkPause})
+		if err != nil || !bg.Background() || bg.OperationID != "op-1" || bg.Selected != 4400 || bg.Succeeded != 0 {
+			t.Fatalf("Bulk in the background %+v %v", bg, err)
+		}
+		op, err := client.GetBulkOperation(ctx, bg.OperationID)
+		if err != nil || op.State != vibecards.BulkOperationRunning || op.State.Finished() || op.Total != 4400 || op.Done != 1025 ||
+			op.Failures[0].Reason != vibecards.ReasonNotAllowed || op.StartedBy.ID != "sub-admin" || op.StartedAt.Hour() != 9 || op.FinishedAt != nil {
+			t.Fatalf("GetBulkOperation %+v %v", op, err)
+		}
+		if _, err := client.GetBulkOperation(ctx, "op-2"); !errors.Is(err, vibecards.ErrNotFound) {
+			t.Fatalf("an unknown operation: %v", err)
+		}
+		bal, err := client.TopUp(ctx, vibecards.TopUpInput{Person: vibecards.Person("sub-buyer"), IssuerAccountID: "acc",
+			Amount: vibecards.USD(5000), RequestID: "r-1"})
+		if err != nil || bal == nil || bal.Minor != 12500 || bal.Currency != "USD" {
+			t.Fatalf("TopUp %+v %v", bal, err)
 		}
 		sl, err := client.ListShares(ctx, vibecards.ListSharesInput{CardID: "d", WithID: "sub-viewer", OwnerID: "sub-owner",
 			Page: vibecards.Page{Size: 10, Token: "t"}})
@@ -661,7 +707,8 @@ func TestEveryMethodSpeaksTheProto(t *testing.T) {
 		usd := ptr(vibecards.USD(1000))
 		full := vibecards.Filter{Labels: []string{"uk"}, Owner: []string{"me"}, Holder: []string{"none"},
 			Status: []vibecards.CardStatus{vibecards.CardStatusActive}, SharedWith: []string{"sub"}, UpdatedSince: &since,
-			Query: "42", CardIDs: []string{"d"}, IssuerAccountIDs: []string{"acc"}}
+			Query: "42", CardIDs: []string{"d"}, IssuerAccountIDs: []string{"acc"},
+			UsageApp: "vibe-fb", UsageExternalID: "act_1"}
 		limits := &vibecards.Limits{Total: usd, PerTxn: usd}
 		calls := map[string]func() error{
 			"Issue": func() error {

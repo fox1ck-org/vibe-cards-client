@@ -126,6 +126,15 @@ message Filter {
   // Cards issued from these issuer accounts. Only meaningful when the
   // organisation issues from its own accounts (IssueMode OWN).
   repeated string issuer_account_ids = 9;
+  // Cards with a usage of this client application (Usage.app, as the client
+  // names itself) — "which cards work for my things?". The usage is live:
+  // a removed usage no longer selects its card.
+  string usage_app = 10;
+  // With usage_app: the card(s) working for this one thing of that client
+  // (Usage.external_id) — "which card pays for my account 812-…-4410?". An
+  // external id is the client's own and means nothing without its app, so
+  // this alone is refused (InvalidArgument).
+  string usage_external_id = 11;
 }
 
 message PageRequest {

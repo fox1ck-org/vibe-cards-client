@@ -83,11 +83,12 @@ type actor struct{ sub, email string }
 // OnBehalfOf marks the calls made with the returned context as made for the
 // person `sub` (a Keycloak subject; email is optional, for the journal).
 //
-// It changes who vibe-cards RECORDS as having acted, and lets a service
-// with the `on_behalf` scope take, present and wait for a card the person
-// may use. It never widens what the service itself may see. Note that "me"
-// in a Filter or a Principal is still the service: name the person
-// explicitly.
+// For a service key with the `on_behalf` scope, vibe-cards then judges the
+// call as that person: it sees what they see and may use what they may use
+// (with the key's own scopes on top, never an admin's reach), "me" in a
+// Filter or a Principal is the person, and the journal records the service
+// acting for them. Without the scope the header is ignored and the service
+// acts as itself — and sees only what was shared with it.
 func OnBehalfOf(ctx context.Context, sub, email string) context.Context {
 	return context.WithValue(ctx, keyActor, actor{sub: strings.TrimSpace(sub), email: strings.TrimSpace(email)})
 }

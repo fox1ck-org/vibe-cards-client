@@ -221,3 +221,35 @@ func (b *Bucket) UnmarshalJSON(raw []byte) error {
 	*b = Bucket(n)
 	return err
 }
+
+// BulkOperationState is cards.v2.BulkOperationState.
+type BulkOperationState int32
+
+const (
+	BulkOperationUnspecified BulkOperationState = 0
+	BulkOperationRunning     BulkOperationState = 1
+	// BulkOperationDone: every selected card was tried; Failures says which
+	// were refused.
+	BulkOperationDone BulkOperationState = 2
+	// BulkOperationFailed: the operation stopped before trying every card;
+	// the cards it did not reach are unchanged.
+	BulkOperationFailed BulkOperationState = 3
+)
+
+var bulkOperationStateNames = map[string]int32{
+	"BULK_OPERATION_STATE_UNSPECIFIED": 0, "BULK_OPERATION_STATE_RUNNING": 1,
+	"BULK_OPERATION_STATE_DONE": 2, "BULK_OPERATION_STATE_FAILED": 3,
+}
+
+func (s BulkOperationState) String() string               { return enumName(int32(s), bulkOperationStateNames) }
+func (s BulkOperationState) MarshalJSON() ([]byte, error) { return encodeEnum(int32(s)) }
+func (s *BulkOperationState) UnmarshalJSON(b []byte) error {
+	n, err := decodeEnum(b, bulkOperationStateNames)
+	*s = BulkOperationState(n)
+	return err
+}
+
+// Finished reports whether the operation will not change any more.
+func (s BulkOperationState) Finished() bool {
+	return s == BulkOperationDone || s == BulkOperationFailed
+}

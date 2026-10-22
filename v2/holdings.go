@@ -39,10 +39,10 @@ func (c *Client) Take(ctx context.Context, in TakeInput) (*Card, error) {
 // the rest is what Take records.
 type TakeFirstInput struct {
 	// Narrows the candidates. Holder is forced to Nobody; Status defaults
-	// to ACTIVE. Filters run with the CALLER's visibility: a service acting
-	// for a person narrows to that person's cards itself (Owner or
-	// SharedWith = the person's sub) — a card the person may not use is
-	// skipped, not taken.
+	// to ACTIVE. Filters run with the CALLER's visibility — under
+	// OnBehalfOf, the person's: their cards, their hands, what was shared
+	// with them; narrow further with Owner or SharedWith. A card the holder
+	// may not use is skipped, not taken.
 	Filter Filter
 	// Sort order of the candidates; empty: newest first.
 	OrderBy   string

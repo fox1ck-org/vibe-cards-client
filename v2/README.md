@@ -64,8 +64,25 @@ code, err := cards.WaitThreeDS(ctx, card.ID, since, 2*time.Minute) // nil, nil: 
 _, err = cards.Return(ctx, card.ID, "account died")
 ```
 
-`Me` in a filter or principal is always the **caller** — under `OnBehalfOf`
-still the service — so name the person explicitly.
+Under `OnBehalfOf` the service **is that person** to vibe-cards (since
+vibe-cards К1-3b): it sees and may use what the person sees and may use, with
+the key's own scopes on top (`pan:redeem`, taking for somebody else), never an
+admin's reach; `Me` in a filter or principal is the person too. Without
+`OnBehalfOf` a service key sees only what was shared with the service itself —
+usually nothing — so name the person on every call that selects cards.
+
+## Find a card by where it works
+
+No need to keep card ids: the usage you added is the key.
+
+```go
+list, err := cards.List(ctx, vibecards.ListInput{Filter: vibecards.Filter{
+    UsageApp: "vibe-fb", UsageExternalID: adAccountID, // or UsageApp alone: every card working for you
+}})
+```
+
+A removed usage (`RemoveUsage`, or `Return`, which drops the holding's usages)
+no longer selects its card. `UsageExternalID` without `UsageApp` is refused.
 
 ## Errors
 
@@ -97,13 +114,35 @@ list, err := cards.List(ctx, vibecards.ListInput{
 n, err := cards.RevealNumber(ctx, cardID, "support ticket 1234") // people only, on the record
 ```
 
+A vibe-desk token (`azp = vibe-desk`, admitted by `READER_ACCEPTED_AZP`) opens
+the reads only — `List`, `Get`, `ListChanges`; everything that changes a card
+answers `ErrUnauthenticated` to it.
+
+## Bulk over a whole organisation
+
+Up to 1000 selected cards `Bulk` applies the action and answers the outcome.
+Beyond that it answers at once with an operation to follow:
+
+```go
+res, err := cards.Bulk(ctx, vibecards.BulkInput{Filter: vibecards.Filter{Labels: []string{"uk"}}, Action: vibecards.BulkPause})
+if res.Background() {
+    for {
+        op, err := cards.GetBulkOperation(ctx, res.OperationID) // starter or admin only
+        if err != nil || op.State.Finished() { break }
+        time.Sleep(5 * time.Second) // op.Done of op.Total
+    }
+}
+```
+
 ## What is covered
 
-Card (Issue, Get, List, Update, Pause, Resume, Close, Bulk, RevealNumber,
-ListChanges), Holding (Take, TakeFirst, Return, Transfer, AddUsage,
-RemoveUsage), Share (Share, Unshare, ListShares), Pan (IssueGrant, Redeem,
-CardDetails, WaitThreeDS), Spend (Query). Labels, rules and issuing
-settings are the console's business and are not wrapped.
+Card (Issue, Get, List, Update, Pause, Resume, Close, Bulk, GetBulkOperation,
+RevealNumber, ListChanges), Holding (Take, TakeFirst, Return, Transfer,
+AddUsage, RemoveUsage), Share (Share, Unshare, ListShares), Pan (IssueGrant,
+Redeem, CardDetails, WaitThreeDS), Spend (Query), Issuing (TopUp — money to a
+person's account at the issuer; raising one card's limit is `Update` with
+`Limits`). Labels, rules and the rest of the issuing settings are the
+console's business and are not wrapped.
 
 ## Conformance
 
@@ -121,7 +160,7 @@ cp ../../../finance/vibe-cards/proto/cards/v2/*.proto conformance/proto/cards/v2
 cd conformance/proto && buf generate && cd .. && go test ./...
 ```
 
-The copy is of vibe-cards `cc285c8` (#111).
+The copy is of vibe-cards #113 (К1-3b: usage filter, background Bulk).
 
 ## Releasing
 
@@ -129,5 +168,5 @@ Tag in lockstep with the vibe-cards API it speaks to. The module lives in the
 `v2/` major-version subdirectory, so its tags have no prefix:
 
 ```sh
-git tag v2.0.0 && git push origin v2.0.0
+git tag v2.1.0 && git push origin v2.1.0
 ```

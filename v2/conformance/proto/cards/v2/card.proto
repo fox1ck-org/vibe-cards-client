@@ -53,7 +53,16 @@ service CardService {
   // selects ("freeze all my cards" is Bulk with owner = me and PAUSE). Each
   // card is checked as if it were the only one; one card's refusal does not
   // stop the rest.
+  //
+  // Up to 1000 selected cards the call applies the action and answers the
+  // outcome. Beyond that ("pause every card labelled uk" in an organisation
+  // of thousands) the cards are worked through in the background: the
+  // answer carries `operation_id`, and GetBulkOperation follows it.
   rpc Bulk(BulkRequest) returns (BulkResponse);
+  // GetBulkOperation follows a Bulk that runs in the background: how many
+  // cards are done, how many were refused and why. Only whoever started it,
+  // or an admin, reads it; anybody else is answered ERROR_REASON_NOT_FOUND.
+  rpc GetBulkOperation(GetBulkOperationRequest) returns (GetBulkOperationResponse);
   // RevealNumber shows one card's number to a PERSON, never to a service (a
   // service gets a ticket from PanService). The guarantees: a card the
   // caller can see, and — for a member — owns, holds or was given for USE or
@@ -282,6 +291,48 @@ message BulkResponse {
   int32 succeeded = 1;
   int32 failed = 2;
   repeated BulkFailure failures = 3;
+  // Set when the cards are worked through in the background (more than 1000
+  // selected): succeeded and failed are then 0, and GetBulkOperation tells
+  // how it goes.
+  string operation_id = 4;
+  // How many cards the filter selected.
+  int32 selected = 5;
+}
+
+message GetBulkOperationRequest {
+  string operation_id = 1 [(buf.validate.field).string.min_len = 1];
+}
+
+message GetBulkOperationResponse {
+  BulkOperation operation = 1;
+}
+
+enum BulkOperationState {
+  BULK_OPERATION_STATE_UNSPECIFIED = 0;
+  BULK_OPERATION_STATE_RUNNING = 1;
+  // Every selected card was tried; `failures` says which were refused.
+  BULK_OPERATION_STATE_DONE = 2;
+  // The operation itself stopped before trying every card (`done` says how
+  // far it got); the cards it did not reach are unchanged.
+  BULK_OPERATION_STATE_FAILED = 3;
+}
+
+// BulkOperation is a Bulk running in the background.
+message BulkOperation {
+  string id = 1;
+  BulkAction action = 2;
+  BulkOperationState state = 3;
+  // The cards the filter selected when the operation started.
+  int32 total = 4;
+  // Cards tried so far: succeeded + failed.
+  int32 done = 5;
+  int32 succeeded = 6;
+  int32 failed = 7;
+  // The first refusals (at most 200); `failed` counts them all.
+  repeated BulkFailure failures = 8;
+  Principal started_by = 9;
+  google.protobuf.Timestamp started_at = 10;
+  optional google.protobuf.Timestamp finished_at = 11;
 }
 
 message BulkFailure {
