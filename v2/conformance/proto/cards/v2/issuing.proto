@@ -22,6 +22,17 @@ option go_package = "github.com/fox1ck-org/vibe-cards/gen/cards/v2;cardsv2";
 // report_time_zone of GetSettings (every other settings field is empty to a
 // member).
 service IssuingService {
+  // Provider-scoped delivery credentials, hash-only at rest. Minting leaves
+  // existing tokens valid; revoke only after the new URL receives deliveries.
+  rpc MintWebhookToken(MintWebhookTokenRequest) returns (MintWebhookTokenResponse);
+  rpc RevokeWebhookToken(RevokeWebhookTokenRequest) returns (RevokeWebhookTokenResponse);
+  // Current personal integration credentials remain manageable until the
+  // platform-key migration. Only a signed-in administrator, never a key,
+  // may create, list or revoke them. Service scopes cannot be minted here.
+  // Creating again replaces the same administrator's personal key.
+  rpc CreateAPIKey(CreateAPIKeyRequest) returns (CreateAPIKeyResponse);
+  rpc ListAPIKeys(ListAPIKeysRequest) returns (ListAPIKeysResponse);
+  rpc RevokeAPIKey(RevokeAPIKeyRequest) returns (RevokeAPIKeyResponse);
   rpc GetSettings(GetSettingsRequest) returns (GetSettingsResponse);
   // UpdateSettings changes the mode, the default account, the report time
   // zone and the top-up strategy. OWN needs the plan's custom-issuers
@@ -71,6 +82,17 @@ service IssuingService {
   // ArchiveHolderProfile refuses a profile something still resolves to
   // (ERROR_REASON_PROFILE_IN_USE).
   rpc ArchiveHolderProfile(ArchiveHolderProfileRequest) returns (ArchiveHolderProfileResponse);
+
+  // People's frames: what a member may issue on their own — which issuer,
+  // how many cards, how large, how much in all. Breaking one answers
+  // ERROR_REASON_LIMIT_REACHED. An administrator is never held to a frame.
+  // ListPersonLimits: every frame for an administrator or viewer, a
+  // member's own for a member.
+  rpc ListPersonLimits(ListPersonLimitsRequest) returns (ListPersonLimitsResponse);
+  // SavePersonLimits sets one person's frame (administrator).
+  rpc SavePersonLimits(SavePersonLimitsRequest) returns (SavePersonLimitsResponse);
+  // DeletePersonLimits lifts it (administrator).
+  rpc DeletePersonLimits(DeletePersonLimitsRequest) returns (DeletePersonLimitsResponse);
 }
 
 enum IssueMode {
@@ -365,3 +387,113 @@ message ArchiveHolderProfileRequest {
 }
 
 message ArchiveHolderProfileResponse {}
+
+// PersonLimits is one person's frame. An unset cap is no cap.
+message PersonLimits {
+  // The person (Principal KIND_PERSON); `name` is filled on output.
+  Principal person = 1 [(buf.validate.field).required = true];
+  // The issuer account their cards always come from; empty = the
+  // organisation's default.
+  string issuer_account_id = 2;
+  optional int32 max_open_cards = 3 [(buf.validate.field).int32.gt = 0];
+  optional int32 max_cards_per_day = 4 [(buf.validate.field).int32.gt = 0];
+  // A card's limit is at most this; a card issued without one gets it.
+  optional Money max_card_limit = 5;
+  // The most the person can ever spend through their cards: the spend of
+  // each closed card plus the limit (or spend, when higher) of each open
+  // one.
+  optional Money budget = 6;
+  string note = 7;
+  // Filled by the server.
+  PersonLimitsUsage usage = 8;
+  google.protobuf.Timestamp updated_at = 9;
+}
+
+// Where a person stands against their frame.
+message PersonLimitsUsage {
+  int32 open_cards = 1;
+  // Issues in the last 24 hours that did not fail.
+  int32 issued_today = 2;
+  Money exposure = 3;
+  // An open card of theirs has no limit: no budget can be met until it has
+  // one.
+  bool unlimited_card = 4;
+}
+
+message ListPersonLimitsRequest {}
+
+message ListPersonLimitsResponse {
+  repeated PersonLimits limits = 1;
+}
+
+message SavePersonLimitsRequest {
+  PersonLimits limits = 1 [(buf.validate.field).required = true];
+}
+
+message SavePersonLimitsResponse {
+  PersonLimits limits = 1;
+}
+
+message DeletePersonLimitsRequest {
+  string person_id = 1 [(buf.validate.field).string.min_len = 1];
+}
+
+message DeletePersonLimitsResponse {}
+
+message MintWebhookTokenRequest {
+  // A label, so two tokens can be told apart while a rotation is in flight.
+  string name = 1;
+  // The provider whose deliveries the token admits.
+  string issuer_account_id = 2 [(buf.validate.field).string.uuid = true];
+}
+
+message MintWebhookTokenResponse {
+  string id = 1;
+  // The whole URL to paste into the provider's settings, secret included.
+  // Shown once.
+  string webhook_url = 2;
+  string token_prefix = 3;
+}
+
+message RevokeWebhookTokenRequest {
+  string id = 1 [(buf.validate.field).string.uuid = true];
+}
+
+message RevokeWebhookTokenResponse {
+  bool revoked = 1;
+}
+
+message APIKey {
+  string id = 1;
+  string key_prefix = 3;
+  string name = 4;
+  repeated string scopes = 5;
+  optional google.protobuf.Timestamp last_used_at = 6;
+  optional google.protobuf.Timestamp expires_at = 7;
+  google.protobuf.Timestamp created_at = 8;
+  optional string user_sub = 9;
+  optional string user_email = 10;
+}
+
+message CreateAPIKeyRequest {
+  string name = 1 [(buf.validate.field).string.min_len = 1];
+  repeated string scopes = 2;
+  optional google.protobuf.Timestamp expires_at = 3;
+}
+
+message CreateAPIKeyResponse {
+  APIKey api_key = 1;
+  string key = 2;
+}
+
+message ListAPIKeysRequest {}
+
+message ListAPIKeysResponse {
+  repeated APIKey api_keys = 1;
+}
+
+message RevokeAPIKeyRequest {
+  string id = 1 [(buf.validate.field).string.uuid = true];
+}
+
+message RevokeAPIKeyResponse {}

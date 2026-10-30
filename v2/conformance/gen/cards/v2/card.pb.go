@@ -2042,10 +2042,8 @@ func (x *BulkFailure) GetMessage() string {
 }
 
 type RevealNumberRequest struct {
-	state  protoimpl.MessageState `protogen:"open.v1"`
-	CardId string                 `protobuf:"bytes,1,opt,name=card_id,json=cardId,proto3" json:"card_id,omitempty"`
-	// Why the number is needed. Recorded with the reveal.
-	Reason        string `protobuf:"bytes,2,opt,name=reason,proto3" json:"reason,omitempty"`
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	CardId        string                 `protobuf:"bytes,1,opt,name=card_id,json=cardId,proto3" json:"card_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2083,13 +2081,6 @@ func (*RevealNumberRequest) Descriptor() ([]byte, []int) {
 func (x *RevealNumberRequest) GetCardId() string {
 	if x != nil {
 		return x.CardId
-	}
-	return ""
-}
-
-func (x *RevealNumberRequest) GetReason() string {
-	if x != nil {
-		return x.Reason
 	}
 	return ""
 }
@@ -2654,10 +2645,9 @@ const file_cards_v2_card_proto_rawDesc = "" +
 	"\vBulkFailure\x12\x17\n" +
 	"\acard_id\x18\x01 \x01(\tR\x06cardId\x12\x16\n" +
 	"\x06reason\x18\x02 \x01(\tR\x06reason\x12\x18\n" +
-	"\amessage\x18\x03 \x01(\tR\amessage\"X\n" +
+	"\amessage\x18\x03 \x01(\tR\amessage\"E\n" +
 	"\x13RevealNumberRequest\x12 \n" +
-	"\acard_id\x18\x01 \x01(\tB\a\xbaH\x04r\x02\x10\x01R\x06cardId\x12\x1f\n" +
-	"\x06reason\x18\x02 \x01(\tB\a\xbaH\x04r\x02\x10\x01R\x06reason\"\x91\x02\n" +
+	"\acard_id\x18\x01 \x01(\tB\a\xbaH\x04r\x02\x10\x01R\x06cardIdJ\x04\b\x02\x10\x03R\x06reason\"\x91\x02\n" +
 	"\x14RevealNumberResponse\x12\x16\n" +
 	"\x06number\x18\x01 \x01(\tR\x06number\x12\x1b\n" +
 	"\texp_month\x18\x02 \x01(\tR\bexpMonth\x12\x19\n" +

@@ -66,8 +66,8 @@ service CardService {
   // RevealNumber shows one card's number to a PERSON, never to a service (a
   // service gets a ticket from PanService). The guarantees: a card the
   // caller can see, and — for a member — owns, holds or was given for USE or
-  // VIEW; a reason, required; the journal row written BEFORE the issuer is
-  // asked, so a reveal that cannot be recorded does not happen; a cooldown
+  // VIEW; the journal row written BEFORE the issuer is asked, so a reveal
+  // that cannot be recorded does not happen; a cooldown
   // per person per card. The owner and admins see every reveal in
   // ListChanges.
   rpc RevealNumber(RevealNumberRequest) returns (RevealNumberResponse);
@@ -398,8 +398,8 @@ message BulkFailure {
 
 message RevealNumberRequest {
   string card_id = 1 [(buf.validate.field).string.min_len = 1];
-  // Why the number is needed. Recorded with the reveal.
-  string reason = 2 [(buf.validate.field).string.min_len = 1];
+  reserved 2;
+  reserved "reason";
 }
 
 message RevealNumberResponse {

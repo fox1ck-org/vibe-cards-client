@@ -33,6 +33,21 @@ const (
 // reflection-formatted method names, remove the leading slash and convert the remaining slash to a
 // period.
 const (
+	// IssuingServiceMintWebhookTokenProcedure is the fully-qualified name of the IssuingService's
+	// MintWebhookToken RPC.
+	IssuingServiceMintWebhookTokenProcedure = "/cards.v2.IssuingService/MintWebhookToken"
+	// IssuingServiceRevokeWebhookTokenProcedure is the fully-qualified name of the IssuingService's
+	// RevokeWebhookToken RPC.
+	IssuingServiceRevokeWebhookTokenProcedure = "/cards.v2.IssuingService/RevokeWebhookToken"
+	// IssuingServiceCreateAPIKeyProcedure is the fully-qualified name of the IssuingService's
+	// CreateAPIKey RPC.
+	IssuingServiceCreateAPIKeyProcedure = "/cards.v2.IssuingService/CreateAPIKey"
+	// IssuingServiceListAPIKeysProcedure is the fully-qualified name of the IssuingService's
+	// ListAPIKeys RPC.
+	IssuingServiceListAPIKeysProcedure = "/cards.v2.IssuingService/ListAPIKeys"
+	// IssuingServiceRevokeAPIKeyProcedure is the fully-qualified name of the IssuingService's
+	// RevokeAPIKey RPC.
+	IssuingServiceRevokeAPIKeyProcedure = "/cards.v2.IssuingService/RevokeAPIKey"
 	// IssuingServiceGetSettingsProcedure is the fully-qualified name of the IssuingService's
 	// GetSettings RPC.
 	IssuingServiceGetSettingsProcedure = "/cards.v2.IssuingService/GetSettings"
@@ -73,10 +88,30 @@ const (
 	// IssuingServiceArchiveHolderProfileProcedure is the fully-qualified name of the IssuingService's
 	// ArchiveHolderProfile RPC.
 	IssuingServiceArchiveHolderProfileProcedure = "/cards.v2.IssuingService/ArchiveHolderProfile"
+	// IssuingServiceListPersonLimitsProcedure is the fully-qualified name of the IssuingService's
+	// ListPersonLimits RPC.
+	IssuingServiceListPersonLimitsProcedure = "/cards.v2.IssuingService/ListPersonLimits"
+	// IssuingServiceSavePersonLimitsProcedure is the fully-qualified name of the IssuingService's
+	// SavePersonLimits RPC.
+	IssuingServiceSavePersonLimitsProcedure = "/cards.v2.IssuingService/SavePersonLimits"
+	// IssuingServiceDeletePersonLimitsProcedure is the fully-qualified name of the IssuingService's
+	// DeletePersonLimits RPC.
+	IssuingServiceDeletePersonLimitsProcedure = "/cards.v2.IssuingService/DeletePersonLimits"
 )
 
 // IssuingServiceClient is a client for the cards.v2.IssuingService service.
 type IssuingServiceClient interface {
+	// Provider-scoped delivery credentials, hash-only at rest. Minting leaves
+	// existing tokens valid; revoke only after the new URL receives deliveries.
+	MintWebhookToken(context.Context, *connect.Request[v2.MintWebhookTokenRequest]) (*connect.Response[v2.MintWebhookTokenResponse], error)
+	RevokeWebhookToken(context.Context, *connect.Request[v2.RevokeWebhookTokenRequest]) (*connect.Response[v2.RevokeWebhookTokenResponse], error)
+	// Current personal integration credentials remain manageable until the
+	// platform-key migration. Only a signed-in administrator, never a key,
+	// may create, list or revoke them. Service scopes cannot be minted here.
+	// Creating again replaces the same administrator's personal key.
+	CreateAPIKey(context.Context, *connect.Request[v2.CreateAPIKeyRequest]) (*connect.Response[v2.CreateAPIKeyResponse], error)
+	ListAPIKeys(context.Context, *connect.Request[v2.ListAPIKeysRequest]) (*connect.Response[v2.ListAPIKeysResponse], error)
+	RevokeAPIKey(context.Context, *connect.Request[v2.RevokeAPIKeyRequest]) (*connect.Response[v2.RevokeAPIKeyResponse], error)
 	GetSettings(context.Context, *connect.Request[v2.GetSettingsRequest]) (*connect.Response[v2.GetSettingsResponse], error)
 	// UpdateSettings changes the mode, the default account, the report time
 	// zone and the top-up strategy. OWN needs the plan's custom-issuers
@@ -122,6 +157,16 @@ type IssuingServiceClient interface {
 	// ArchiveHolderProfile refuses a profile something still resolves to
 	// (ERROR_REASON_PROFILE_IN_USE).
 	ArchiveHolderProfile(context.Context, *connect.Request[v2.ArchiveHolderProfileRequest]) (*connect.Response[v2.ArchiveHolderProfileResponse], error)
+	// People's frames: what a member may issue on their own — which issuer,
+	// how many cards, how large, how much in all. Breaking one answers
+	// ERROR_REASON_LIMIT_REACHED. An administrator is never held to a frame.
+	// ListPersonLimits: every frame for an administrator or viewer, a
+	// member's own for a member.
+	ListPersonLimits(context.Context, *connect.Request[v2.ListPersonLimitsRequest]) (*connect.Response[v2.ListPersonLimitsResponse], error)
+	// SavePersonLimits sets one person's frame (administrator).
+	SavePersonLimits(context.Context, *connect.Request[v2.SavePersonLimitsRequest]) (*connect.Response[v2.SavePersonLimitsResponse], error)
+	// DeletePersonLimits lifts it (administrator).
+	DeletePersonLimits(context.Context, *connect.Request[v2.DeletePersonLimitsRequest]) (*connect.Response[v2.DeletePersonLimitsResponse], error)
 }
 
 // NewIssuingServiceClient constructs a client for the cards.v2.IssuingService service. By default,
@@ -135,6 +180,36 @@ func NewIssuingServiceClient(httpClient connect.HTTPClient, baseURL string, opts
 	baseURL = strings.TrimRight(baseURL, "/")
 	issuingServiceMethods := v2.File_cards_v2_issuing_proto.Services().ByName("IssuingService").Methods()
 	return &issuingServiceClient{
+		mintWebhookToken: connect.NewClient[v2.MintWebhookTokenRequest, v2.MintWebhookTokenResponse](
+			httpClient,
+			baseURL+IssuingServiceMintWebhookTokenProcedure,
+			connect.WithSchema(issuingServiceMethods.ByName("MintWebhookToken")),
+			connect.WithClientOptions(opts...),
+		),
+		revokeWebhookToken: connect.NewClient[v2.RevokeWebhookTokenRequest, v2.RevokeWebhookTokenResponse](
+			httpClient,
+			baseURL+IssuingServiceRevokeWebhookTokenProcedure,
+			connect.WithSchema(issuingServiceMethods.ByName("RevokeWebhookToken")),
+			connect.WithClientOptions(opts...),
+		),
+		createAPIKey: connect.NewClient[v2.CreateAPIKeyRequest, v2.CreateAPIKeyResponse](
+			httpClient,
+			baseURL+IssuingServiceCreateAPIKeyProcedure,
+			connect.WithSchema(issuingServiceMethods.ByName("CreateAPIKey")),
+			connect.WithClientOptions(opts...),
+		),
+		listAPIKeys: connect.NewClient[v2.ListAPIKeysRequest, v2.ListAPIKeysResponse](
+			httpClient,
+			baseURL+IssuingServiceListAPIKeysProcedure,
+			connect.WithSchema(issuingServiceMethods.ByName("ListAPIKeys")),
+			connect.WithClientOptions(opts...),
+		),
+		revokeAPIKey: connect.NewClient[v2.RevokeAPIKeyRequest, v2.RevokeAPIKeyResponse](
+			httpClient,
+			baseURL+IssuingServiceRevokeAPIKeyProcedure,
+			connect.WithSchema(issuingServiceMethods.ByName("RevokeAPIKey")),
+			connect.WithClientOptions(opts...),
+		),
 		getSettings: connect.NewClient[v2.GetSettingsRequest, v2.GetSettingsResponse](
 			httpClient,
 			baseURL+IssuingServiceGetSettingsProcedure,
@@ -219,11 +294,34 @@ func NewIssuingServiceClient(httpClient connect.HTTPClient, baseURL string, opts
 			connect.WithSchema(issuingServiceMethods.ByName("ArchiveHolderProfile")),
 			connect.WithClientOptions(opts...),
 		),
+		listPersonLimits: connect.NewClient[v2.ListPersonLimitsRequest, v2.ListPersonLimitsResponse](
+			httpClient,
+			baseURL+IssuingServiceListPersonLimitsProcedure,
+			connect.WithSchema(issuingServiceMethods.ByName("ListPersonLimits")),
+			connect.WithClientOptions(opts...),
+		),
+		savePersonLimits: connect.NewClient[v2.SavePersonLimitsRequest, v2.SavePersonLimitsResponse](
+			httpClient,
+			baseURL+IssuingServiceSavePersonLimitsProcedure,
+			connect.WithSchema(issuingServiceMethods.ByName("SavePersonLimits")),
+			connect.WithClientOptions(opts...),
+		),
+		deletePersonLimits: connect.NewClient[v2.DeletePersonLimitsRequest, v2.DeletePersonLimitsResponse](
+			httpClient,
+			baseURL+IssuingServiceDeletePersonLimitsProcedure,
+			connect.WithSchema(issuingServiceMethods.ByName("DeletePersonLimits")),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
 // issuingServiceClient implements IssuingServiceClient.
 type issuingServiceClient struct {
+	mintWebhookToken     *connect.Client[v2.MintWebhookTokenRequest, v2.MintWebhookTokenResponse]
+	revokeWebhookToken   *connect.Client[v2.RevokeWebhookTokenRequest, v2.RevokeWebhookTokenResponse]
+	createAPIKey         *connect.Client[v2.CreateAPIKeyRequest, v2.CreateAPIKeyResponse]
+	listAPIKeys          *connect.Client[v2.ListAPIKeysRequest, v2.ListAPIKeysResponse]
+	revokeAPIKey         *connect.Client[v2.RevokeAPIKeyRequest, v2.RevokeAPIKeyResponse]
 	getSettings          *connect.Client[v2.GetSettingsRequest, v2.GetSettingsResponse]
 	updateSettings       *connect.Client[v2.UpdateSettingsRequest, v2.UpdateSettingsResponse]
 	listAccounts         *connect.Client[v2.ListAccountsRequest, v2.ListAccountsResponse]
@@ -238,6 +336,34 @@ type issuingServiceClient struct {
 	listHolderProfiles   *connect.Client[v2.ListHolderProfilesRequest, v2.ListHolderProfilesResponse]
 	saveHolderProfile    *connect.Client[v2.SaveHolderProfileRequest, v2.SaveHolderProfileResponse]
 	archiveHolderProfile *connect.Client[v2.ArchiveHolderProfileRequest, v2.ArchiveHolderProfileResponse]
+	listPersonLimits     *connect.Client[v2.ListPersonLimitsRequest, v2.ListPersonLimitsResponse]
+	savePersonLimits     *connect.Client[v2.SavePersonLimitsRequest, v2.SavePersonLimitsResponse]
+	deletePersonLimits   *connect.Client[v2.DeletePersonLimitsRequest, v2.DeletePersonLimitsResponse]
+}
+
+// MintWebhookToken calls cards.v2.IssuingService.MintWebhookToken.
+func (c *issuingServiceClient) MintWebhookToken(ctx context.Context, req *connect.Request[v2.MintWebhookTokenRequest]) (*connect.Response[v2.MintWebhookTokenResponse], error) {
+	return c.mintWebhookToken.CallUnary(ctx, req)
+}
+
+// RevokeWebhookToken calls cards.v2.IssuingService.RevokeWebhookToken.
+func (c *issuingServiceClient) RevokeWebhookToken(ctx context.Context, req *connect.Request[v2.RevokeWebhookTokenRequest]) (*connect.Response[v2.RevokeWebhookTokenResponse], error) {
+	return c.revokeWebhookToken.CallUnary(ctx, req)
+}
+
+// CreateAPIKey calls cards.v2.IssuingService.CreateAPIKey.
+func (c *issuingServiceClient) CreateAPIKey(ctx context.Context, req *connect.Request[v2.CreateAPIKeyRequest]) (*connect.Response[v2.CreateAPIKeyResponse], error) {
+	return c.createAPIKey.CallUnary(ctx, req)
+}
+
+// ListAPIKeys calls cards.v2.IssuingService.ListAPIKeys.
+func (c *issuingServiceClient) ListAPIKeys(ctx context.Context, req *connect.Request[v2.ListAPIKeysRequest]) (*connect.Response[v2.ListAPIKeysResponse], error) {
+	return c.listAPIKeys.CallUnary(ctx, req)
+}
+
+// RevokeAPIKey calls cards.v2.IssuingService.RevokeAPIKey.
+func (c *issuingServiceClient) RevokeAPIKey(ctx context.Context, req *connect.Request[v2.RevokeAPIKeyRequest]) (*connect.Response[v2.RevokeAPIKeyResponse], error) {
+	return c.revokeAPIKey.CallUnary(ctx, req)
 }
 
 // GetSettings calls cards.v2.IssuingService.GetSettings.
@@ -310,8 +436,34 @@ func (c *issuingServiceClient) ArchiveHolderProfile(ctx context.Context, req *co
 	return c.archiveHolderProfile.CallUnary(ctx, req)
 }
 
+// ListPersonLimits calls cards.v2.IssuingService.ListPersonLimits.
+func (c *issuingServiceClient) ListPersonLimits(ctx context.Context, req *connect.Request[v2.ListPersonLimitsRequest]) (*connect.Response[v2.ListPersonLimitsResponse], error) {
+	return c.listPersonLimits.CallUnary(ctx, req)
+}
+
+// SavePersonLimits calls cards.v2.IssuingService.SavePersonLimits.
+func (c *issuingServiceClient) SavePersonLimits(ctx context.Context, req *connect.Request[v2.SavePersonLimitsRequest]) (*connect.Response[v2.SavePersonLimitsResponse], error) {
+	return c.savePersonLimits.CallUnary(ctx, req)
+}
+
+// DeletePersonLimits calls cards.v2.IssuingService.DeletePersonLimits.
+func (c *issuingServiceClient) DeletePersonLimits(ctx context.Context, req *connect.Request[v2.DeletePersonLimitsRequest]) (*connect.Response[v2.DeletePersonLimitsResponse], error) {
+	return c.deletePersonLimits.CallUnary(ctx, req)
+}
+
 // IssuingServiceHandler is an implementation of the cards.v2.IssuingService service.
 type IssuingServiceHandler interface {
+	// Provider-scoped delivery credentials, hash-only at rest. Minting leaves
+	// existing tokens valid; revoke only after the new URL receives deliveries.
+	MintWebhookToken(context.Context, *connect.Request[v2.MintWebhookTokenRequest]) (*connect.Response[v2.MintWebhookTokenResponse], error)
+	RevokeWebhookToken(context.Context, *connect.Request[v2.RevokeWebhookTokenRequest]) (*connect.Response[v2.RevokeWebhookTokenResponse], error)
+	// Current personal integration credentials remain manageable until the
+	// platform-key migration. Only a signed-in administrator, never a key,
+	// may create, list or revoke them. Service scopes cannot be minted here.
+	// Creating again replaces the same administrator's personal key.
+	CreateAPIKey(context.Context, *connect.Request[v2.CreateAPIKeyRequest]) (*connect.Response[v2.CreateAPIKeyResponse], error)
+	ListAPIKeys(context.Context, *connect.Request[v2.ListAPIKeysRequest]) (*connect.Response[v2.ListAPIKeysResponse], error)
+	RevokeAPIKey(context.Context, *connect.Request[v2.RevokeAPIKeyRequest]) (*connect.Response[v2.RevokeAPIKeyResponse], error)
 	GetSettings(context.Context, *connect.Request[v2.GetSettingsRequest]) (*connect.Response[v2.GetSettingsResponse], error)
 	// UpdateSettings changes the mode, the default account, the report time
 	// zone and the top-up strategy. OWN needs the plan's custom-issuers
@@ -357,6 +509,16 @@ type IssuingServiceHandler interface {
 	// ArchiveHolderProfile refuses a profile something still resolves to
 	// (ERROR_REASON_PROFILE_IN_USE).
 	ArchiveHolderProfile(context.Context, *connect.Request[v2.ArchiveHolderProfileRequest]) (*connect.Response[v2.ArchiveHolderProfileResponse], error)
+	// People's frames: what a member may issue on their own — which issuer,
+	// how many cards, how large, how much in all. Breaking one answers
+	// ERROR_REASON_LIMIT_REACHED. An administrator is never held to a frame.
+	// ListPersonLimits: every frame for an administrator or viewer, a
+	// member's own for a member.
+	ListPersonLimits(context.Context, *connect.Request[v2.ListPersonLimitsRequest]) (*connect.Response[v2.ListPersonLimitsResponse], error)
+	// SavePersonLimits sets one person's frame (administrator).
+	SavePersonLimits(context.Context, *connect.Request[v2.SavePersonLimitsRequest]) (*connect.Response[v2.SavePersonLimitsResponse], error)
+	// DeletePersonLimits lifts it (administrator).
+	DeletePersonLimits(context.Context, *connect.Request[v2.DeletePersonLimitsRequest]) (*connect.Response[v2.DeletePersonLimitsResponse], error)
 }
 
 // NewIssuingServiceHandler builds an HTTP handler from the service implementation. It returns the
@@ -366,6 +528,36 @@ type IssuingServiceHandler interface {
 // and JSON codecs. They also support gzip compression.
 func NewIssuingServiceHandler(svc IssuingServiceHandler, opts ...connect.HandlerOption) (string, http.Handler) {
 	issuingServiceMethods := v2.File_cards_v2_issuing_proto.Services().ByName("IssuingService").Methods()
+	issuingServiceMintWebhookTokenHandler := connect.NewUnaryHandler(
+		IssuingServiceMintWebhookTokenProcedure,
+		svc.MintWebhookToken,
+		connect.WithSchema(issuingServiceMethods.ByName("MintWebhookToken")),
+		connect.WithHandlerOptions(opts...),
+	)
+	issuingServiceRevokeWebhookTokenHandler := connect.NewUnaryHandler(
+		IssuingServiceRevokeWebhookTokenProcedure,
+		svc.RevokeWebhookToken,
+		connect.WithSchema(issuingServiceMethods.ByName("RevokeWebhookToken")),
+		connect.WithHandlerOptions(opts...),
+	)
+	issuingServiceCreateAPIKeyHandler := connect.NewUnaryHandler(
+		IssuingServiceCreateAPIKeyProcedure,
+		svc.CreateAPIKey,
+		connect.WithSchema(issuingServiceMethods.ByName("CreateAPIKey")),
+		connect.WithHandlerOptions(opts...),
+	)
+	issuingServiceListAPIKeysHandler := connect.NewUnaryHandler(
+		IssuingServiceListAPIKeysProcedure,
+		svc.ListAPIKeys,
+		connect.WithSchema(issuingServiceMethods.ByName("ListAPIKeys")),
+		connect.WithHandlerOptions(opts...),
+	)
+	issuingServiceRevokeAPIKeyHandler := connect.NewUnaryHandler(
+		IssuingServiceRevokeAPIKeyProcedure,
+		svc.RevokeAPIKey,
+		connect.WithSchema(issuingServiceMethods.ByName("RevokeAPIKey")),
+		connect.WithHandlerOptions(opts...),
+	)
 	issuingServiceGetSettingsHandler := connect.NewUnaryHandler(
 		IssuingServiceGetSettingsProcedure,
 		svc.GetSettings,
@@ -450,8 +642,36 @@ func NewIssuingServiceHandler(svc IssuingServiceHandler, opts ...connect.Handler
 		connect.WithSchema(issuingServiceMethods.ByName("ArchiveHolderProfile")),
 		connect.WithHandlerOptions(opts...),
 	)
+	issuingServiceListPersonLimitsHandler := connect.NewUnaryHandler(
+		IssuingServiceListPersonLimitsProcedure,
+		svc.ListPersonLimits,
+		connect.WithSchema(issuingServiceMethods.ByName("ListPersonLimits")),
+		connect.WithHandlerOptions(opts...),
+	)
+	issuingServiceSavePersonLimitsHandler := connect.NewUnaryHandler(
+		IssuingServiceSavePersonLimitsProcedure,
+		svc.SavePersonLimits,
+		connect.WithSchema(issuingServiceMethods.ByName("SavePersonLimits")),
+		connect.WithHandlerOptions(opts...),
+	)
+	issuingServiceDeletePersonLimitsHandler := connect.NewUnaryHandler(
+		IssuingServiceDeletePersonLimitsProcedure,
+		svc.DeletePersonLimits,
+		connect.WithSchema(issuingServiceMethods.ByName("DeletePersonLimits")),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/cards.v2.IssuingService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
+		case IssuingServiceMintWebhookTokenProcedure:
+			issuingServiceMintWebhookTokenHandler.ServeHTTP(w, r)
+		case IssuingServiceRevokeWebhookTokenProcedure:
+			issuingServiceRevokeWebhookTokenHandler.ServeHTTP(w, r)
+		case IssuingServiceCreateAPIKeyProcedure:
+			issuingServiceCreateAPIKeyHandler.ServeHTTP(w, r)
+		case IssuingServiceListAPIKeysProcedure:
+			issuingServiceListAPIKeysHandler.ServeHTTP(w, r)
+		case IssuingServiceRevokeAPIKeyProcedure:
+			issuingServiceRevokeAPIKeyHandler.ServeHTTP(w, r)
 		case IssuingServiceGetSettingsProcedure:
 			issuingServiceGetSettingsHandler.ServeHTTP(w, r)
 		case IssuingServiceUpdateSettingsProcedure:
@@ -480,6 +700,12 @@ func NewIssuingServiceHandler(svc IssuingServiceHandler, opts ...connect.Handler
 			issuingServiceSaveHolderProfileHandler.ServeHTTP(w, r)
 		case IssuingServiceArchiveHolderProfileProcedure:
 			issuingServiceArchiveHolderProfileHandler.ServeHTTP(w, r)
+		case IssuingServiceListPersonLimitsProcedure:
+			issuingServiceListPersonLimitsHandler.ServeHTTP(w, r)
+		case IssuingServiceSavePersonLimitsProcedure:
+			issuingServiceSavePersonLimitsHandler.ServeHTTP(w, r)
+		case IssuingServiceDeletePersonLimitsProcedure:
+			issuingServiceDeletePersonLimitsHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -488,6 +714,26 @@ func NewIssuingServiceHandler(svc IssuingServiceHandler, opts ...connect.Handler
 
 // UnimplementedIssuingServiceHandler returns CodeUnimplemented from all methods.
 type UnimplementedIssuingServiceHandler struct{}
+
+func (UnimplementedIssuingServiceHandler) MintWebhookToken(context.Context, *connect.Request[v2.MintWebhookTokenRequest]) (*connect.Response[v2.MintWebhookTokenResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("cards.v2.IssuingService.MintWebhookToken is not implemented"))
+}
+
+func (UnimplementedIssuingServiceHandler) RevokeWebhookToken(context.Context, *connect.Request[v2.RevokeWebhookTokenRequest]) (*connect.Response[v2.RevokeWebhookTokenResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("cards.v2.IssuingService.RevokeWebhookToken is not implemented"))
+}
+
+func (UnimplementedIssuingServiceHandler) CreateAPIKey(context.Context, *connect.Request[v2.CreateAPIKeyRequest]) (*connect.Response[v2.CreateAPIKeyResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("cards.v2.IssuingService.CreateAPIKey is not implemented"))
+}
+
+func (UnimplementedIssuingServiceHandler) ListAPIKeys(context.Context, *connect.Request[v2.ListAPIKeysRequest]) (*connect.Response[v2.ListAPIKeysResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("cards.v2.IssuingService.ListAPIKeys is not implemented"))
+}
+
+func (UnimplementedIssuingServiceHandler) RevokeAPIKey(context.Context, *connect.Request[v2.RevokeAPIKeyRequest]) (*connect.Response[v2.RevokeAPIKeyResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("cards.v2.IssuingService.RevokeAPIKey is not implemented"))
+}
 
 func (UnimplementedIssuingServiceHandler) GetSettings(context.Context, *connect.Request[v2.GetSettingsRequest]) (*connect.Response[v2.GetSettingsResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("cards.v2.IssuingService.GetSettings is not implemented"))
@@ -543,4 +789,16 @@ func (UnimplementedIssuingServiceHandler) SaveHolderProfile(context.Context, *co
 
 func (UnimplementedIssuingServiceHandler) ArchiveHolderProfile(context.Context, *connect.Request[v2.ArchiveHolderProfileRequest]) (*connect.Response[v2.ArchiveHolderProfileResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("cards.v2.IssuingService.ArchiveHolderProfile is not implemented"))
+}
+
+func (UnimplementedIssuingServiceHandler) ListPersonLimits(context.Context, *connect.Request[v2.ListPersonLimitsRequest]) (*connect.Response[v2.ListPersonLimitsResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("cards.v2.IssuingService.ListPersonLimits is not implemented"))
+}
+
+func (UnimplementedIssuingServiceHandler) SavePersonLimits(context.Context, *connect.Request[v2.SavePersonLimitsRequest]) (*connect.Response[v2.SavePersonLimitsResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("cards.v2.IssuingService.SavePersonLimits is not implemented"))
+}
+
+func (UnimplementedIssuingServiceHandler) DeletePersonLimits(context.Context, *connect.Request[v2.DeletePersonLimitsRequest]) (*connect.Response[v2.DeletePersonLimitsResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("cards.v2.IssuingService.DeletePersonLimits is not implemented"))
 }

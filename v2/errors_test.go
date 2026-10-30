@@ -56,7 +56,6 @@ func TestReasonsMapToTheirErrors(t *testing.T) {
 		{ReasonCardNotActive, "failed_precondition", ErrCardNotActive},
 		{ReasonHeldByOther, "failed_precondition", ErrHeldByOther},
 		{ReasonNotSharedForUse, "permission_denied", ErrNotSharedForUse},
-		{ReasonReasonRequired, "failed_precondition", ErrReasonRequired},
 		{ReasonCooldown, "failed_precondition", ErrCooldown},
 		{ReasonGrantSpent, "not_found", ErrGrantSpent},
 		{ReasonCardUnreadable, "failed_precondition", ErrCardUnreadable},

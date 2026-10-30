@@ -230,11 +230,11 @@ type RevealedNumber struct {
 
 // RevealNumber shows a card's number to a person (WithToken with their
 // token). A service never reads a number this way — it uses CardDetails.
-// The reason is required and written to the journal.
-func (c *Client) RevealNumber(ctx context.Context, cardID, reason string) (*RevealedNumber, error) {
+// Every read is written to the card's journal; no reason is asked.
+func (c *Client) RevealNumber(ctx context.Context, cardID string) (*RevealedNumber, error) {
 	var out RevealedNumber
 	if err := c.call(ctx, cardService+"RevealNumber",
-		map[string]string{"cardId": cardID, "reason": reason}, &out, false); err != nil {
+		map[string]string{"cardId": cardID}, &out, false); err != nil {
 		return nil, err
 	}
 	return &out, nil

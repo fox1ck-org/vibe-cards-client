@@ -108,8 +108,8 @@ type CardServiceClient interface {
 	// RevealNumber shows one card's number to a PERSON, never to a service (a
 	// service gets a ticket from PanService). The guarantees: a card the
 	// caller can see, and — for a member — owns, holds or was given for USE or
-	// VIEW; a reason, required; the journal row written BEFORE the issuer is
-	// asked, so a reveal that cannot be recorded does not happen; a cooldown
+	// VIEW; the journal row written BEFORE the issuer is asked, so a reveal
+	// that cannot be recorded does not happen; a cooldown
 	// per person per card. The owner and admins see every reveal in
 	// ListChanges.
 	RevealNumber(context.Context, *connect.Request[v2.RevealNumberRequest]) (*connect.Response[v2.RevealNumberResponse], error)
@@ -320,8 +320,8 @@ type CardServiceHandler interface {
 	// RevealNumber shows one card's number to a PERSON, never to a service (a
 	// service gets a ticket from PanService). The guarantees: a card the
 	// caller can see, and — for a member — owns, holds or was given for USE or
-	// VIEW; a reason, required; the journal row written BEFORE the issuer is
-	// asked, so a reveal that cannot be recorded does not happen; a cooldown
+	// VIEW; the journal row written BEFORE the issuer is asked, so a reveal
+	// that cannot be recorded does not happen; a cooldown
 	// per person per card. The owner and admins see every reveal in
 	// ListChanges.
 	RevealNumber(context.Context, *connect.Request[v2.RevealNumberRequest]) (*connect.Response[v2.RevealNumberResponse], error)
