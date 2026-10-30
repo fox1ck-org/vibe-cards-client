@@ -25,7 +25,6 @@ const (
 	ReasonCardNotActive       Reason = "card_not_active"
 	ReasonHeldByOther         Reason = "held_by_other"
 	ReasonNotSharedForUse     Reason = "not_shared_for_use"
-	ReasonReasonRequired      Reason = "reason_required"
 	ReasonCooldown            Reason = "cooldown"
 	ReasonGrantSpent          Reason = "grant_spent"
 	ReasonCardUnreadable      Reason = "card_unreadable"
@@ -116,7 +115,6 @@ var (
 	ErrCardNotActive       = reasonErr(ReasonCardNotActive, "the card is not active")
 	ErrHeldByOther         = reasonErr(ReasonHeldByOther, "somebody else holds the card")
 	ErrNotSharedForUse     = reasonErr(ReasonNotSharedForUse, "the card is not the holder's and not shared with them for use")
-	ErrReasonRequired      = reasonErr(ReasonReasonRequired, "showing the number needs a reason")
 	ErrCooldown            = reasonErr(ReasonCooldown, "the same person read this card's number too recently")
 	// ErrGrantSpent covers an unknown, expired and already-redeemed ticket
 	// alike: telling them apart would tell a prober which tokens exist.

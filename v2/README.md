@@ -120,7 +120,7 @@ ctx = vibecards.WithToken(ctx, personAccessToken) // the caller's own token
 list, err := cards.List(ctx, vibecards.ListInput{
     Filter: vibecards.Filter{Holder: []string{vibecards.Me}}, OrderBy: "-spent_today",
 })
-n, err := cards.RevealNumber(ctx, cardID, "support ticket 1234") // people only, on the record
+n, err := cards.RevealNumber(ctx, cardID) // people only, on the record
 ```
 
 A vibe-desk token (`azp = vibe-desk`, admitted by `READER_ACCEPTED_AZP`) opens
@@ -169,7 +169,7 @@ cp ../../../finance/vibe-cards/proto/cards/v2/*.proto conformance/proto/cards/v2
 cd conformance/proto && buf generate && cd .. && go test ./...
 ```
 
-The copy is of vibe-cards #115 (К1-3c: status_reason, replaced_by/replaces, synced_at).
+The copy is of vibe-cards #145 (person frames; RevealNumber without a reason).
 
 ## Releasing
 

@@ -528,7 +528,6 @@ var sentinels = map[vibecards.Reason]error{
 	vibecards.ReasonCardNotActive:       vibecards.ErrCardNotActive,
 	vibecards.ReasonHeldByOther:         vibecards.ErrHeldByOther,
 	vibecards.ReasonNotSharedForUse:     vibecards.ErrNotSharedForUse,
-	vibecards.ReasonReasonRequired:      vibecards.ErrReasonRequired,
 	vibecards.ReasonCooldown:            vibecards.ErrCooldown,
 	vibecards.ReasonGrantSpent:          vibecards.ErrGrantSpent,
 	vibecards.ReasonCardUnreadable:      vibecards.ErrCardUnreadable,
@@ -593,8 +592,8 @@ func TestRequestsAreStrictProtoJSON(t *testing.T) {
 func ptr[T any](v T) *T { return &v }
 
 func (f *fake) RevealNumber(_ context.Context, req *connect.Request[pb.RevealNumberRequest]) (*connect.Response[pb.RevealNumberResponse], error) {
-	if req.Msg.GetReason() == "" {
-		return nil, reasonErr(connect.CodeFailedPrecondition, pb.ErrorReason_ERROR_REASON_REASON_REQUIRED, nil)
+	if req.Msg.GetCardId() == "" {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("card_id"))
 	}
 	return connect.NewResponse(&pb.RevealNumberResponse{Number: "4242424242424242", ExpMonth: "01", ExpYear: "2030",
 		Cvv: "123", Holder: &pb.HolderData{Name: "JOHN DOE"}, HiddenByIssuer: []string{"cvv"},
@@ -664,12 +663,9 @@ func TestEveryMethodSpeaksTheProto(t *testing.T) {
 		ctx := context.Background()
 		since := time.Date(2026, 10, 22, 9, 0, 0, 0, time.UTC)
 
-		rn, err := client.RevealNumber(WithPerson(ctx), "d", "support ticket 12")
+		rn, err := client.RevealNumber(WithPerson(ctx), "d")
 		if err != nil || rn.Number == "" || rn.HiddenByIssuer[0] != "cvv" || rn.VisibleUntil.Second() != 30 || rn.Holder.Name != "JOHN DOE" {
 			t.Fatalf("RevealNumber %+v %v", rn, err)
-		}
-		if _, err := client.RevealNumber(WithPerson(ctx), "d", ""); !errors.Is(err, vibecards.ErrReasonRequired) {
-			t.Fatalf("no reason: %v", err)
 		}
 		ch, err := client.ListChanges(ctx, vibecards.ListChangesInput{Filter: vibecards.Filter{UpdatedSince: &since}})
 		if err != nil || len(ch.Changes) != 1 || ch.Changes[0].OnBehalfOf.ID != "sub-buyer" || !ch.Changes[0].At.Equal(since) ||

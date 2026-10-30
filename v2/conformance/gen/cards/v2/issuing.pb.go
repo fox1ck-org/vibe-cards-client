@@ -2430,6 +2430,1027 @@ func (*ArchiveHolderProfileResponse) Descriptor() ([]byte, []int) {
 	return file_cards_v2_issuing_proto_rawDescGZIP(), []int{35}
 }
 
+// PersonLimits is one person's frame. An unset cap is no cap.
+type PersonLimits struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The person (Principal KIND_PERSON); `name` is filled on output.
+	Person *Principal `protobuf:"bytes,1,opt,name=person,proto3" json:"person,omitempty"`
+	// The issuer account their cards always come from; empty = the
+	// organisation's default.
+	IssuerAccountId string `protobuf:"bytes,2,opt,name=issuer_account_id,json=issuerAccountId,proto3" json:"issuer_account_id,omitempty"`
+	MaxOpenCards    *int32 `protobuf:"varint,3,opt,name=max_open_cards,json=maxOpenCards,proto3,oneof" json:"max_open_cards,omitempty"`
+	MaxCardsPerDay  *int32 `protobuf:"varint,4,opt,name=max_cards_per_day,json=maxCardsPerDay,proto3,oneof" json:"max_cards_per_day,omitempty"`
+	// A card's limit is at most this; a card issued without one gets it.
+	MaxCardLimit *Money `protobuf:"bytes,5,opt,name=max_card_limit,json=maxCardLimit,proto3,oneof" json:"max_card_limit,omitempty"`
+	// The most the person can ever spend through their cards: the spend of
+	// each closed card plus the limit (or spend, when higher) of each open
+	// one.
+	Budget *Money `protobuf:"bytes,6,opt,name=budget,proto3,oneof" json:"budget,omitempty"`
+	Note   string `protobuf:"bytes,7,opt,name=note,proto3" json:"note,omitempty"`
+	// Filled by the server.
+	Usage         *PersonLimitsUsage     `protobuf:"bytes,8,opt,name=usage,proto3" json:"usage,omitempty"`
+	UpdatedAt     *timestamppb.Timestamp `protobuf:"bytes,9,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *PersonLimits) Reset() {
+	*x = PersonLimits{}
+	mi := &file_cards_v2_issuing_proto_msgTypes[36]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PersonLimits) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PersonLimits) ProtoMessage() {}
+
+func (x *PersonLimits) ProtoReflect() protoreflect.Message {
+	mi := &file_cards_v2_issuing_proto_msgTypes[36]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PersonLimits.ProtoReflect.Descriptor instead.
+func (*PersonLimits) Descriptor() ([]byte, []int) {
+	return file_cards_v2_issuing_proto_rawDescGZIP(), []int{36}
+}
+
+func (x *PersonLimits) GetPerson() *Principal {
+	if x != nil {
+		return x.Person
+	}
+	return nil
+}
+
+func (x *PersonLimits) GetIssuerAccountId() string {
+	if x != nil {
+		return x.IssuerAccountId
+	}
+	return ""
+}
+
+func (x *PersonLimits) GetMaxOpenCards() int32 {
+	if x != nil && x.MaxOpenCards != nil {
+		return *x.MaxOpenCards
+	}
+	return 0
+}
+
+func (x *PersonLimits) GetMaxCardsPerDay() int32 {
+	if x != nil && x.MaxCardsPerDay != nil {
+		return *x.MaxCardsPerDay
+	}
+	return 0
+}
+
+func (x *PersonLimits) GetMaxCardLimit() *Money {
+	if x != nil {
+		return x.MaxCardLimit
+	}
+	return nil
+}
+
+func (x *PersonLimits) GetBudget() *Money {
+	if x != nil {
+		return x.Budget
+	}
+	return nil
+}
+
+func (x *PersonLimits) GetNote() string {
+	if x != nil {
+		return x.Note
+	}
+	return ""
+}
+
+func (x *PersonLimits) GetUsage() *PersonLimitsUsage {
+	if x != nil {
+		return x.Usage
+	}
+	return nil
+}
+
+func (x *PersonLimits) GetUpdatedAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.UpdatedAt
+	}
+	return nil
+}
+
+// Where a person stands against their frame.
+type PersonLimitsUsage struct {
+	state     protoimpl.MessageState `protogen:"open.v1"`
+	OpenCards int32                  `protobuf:"varint,1,opt,name=open_cards,json=openCards,proto3" json:"open_cards,omitempty"`
+	// Issues in the last 24 hours that did not fail.
+	IssuedToday int32  `protobuf:"varint,2,opt,name=issued_today,json=issuedToday,proto3" json:"issued_today,omitempty"`
+	Exposure    *Money `protobuf:"bytes,3,opt,name=exposure,proto3" json:"exposure,omitempty"`
+	// An open card of theirs has no limit: no budget can be met until it has
+	// one.
+	UnlimitedCard bool `protobuf:"varint,4,opt,name=unlimited_card,json=unlimitedCard,proto3" json:"unlimited_card,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *PersonLimitsUsage) Reset() {
+	*x = PersonLimitsUsage{}
+	mi := &file_cards_v2_issuing_proto_msgTypes[37]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PersonLimitsUsage) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PersonLimitsUsage) ProtoMessage() {}
+
+func (x *PersonLimitsUsage) ProtoReflect() protoreflect.Message {
+	mi := &file_cards_v2_issuing_proto_msgTypes[37]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PersonLimitsUsage.ProtoReflect.Descriptor instead.
+func (*PersonLimitsUsage) Descriptor() ([]byte, []int) {
+	return file_cards_v2_issuing_proto_rawDescGZIP(), []int{37}
+}
+
+func (x *PersonLimitsUsage) GetOpenCards() int32 {
+	if x != nil {
+		return x.OpenCards
+	}
+	return 0
+}
+
+func (x *PersonLimitsUsage) GetIssuedToday() int32 {
+	if x != nil {
+		return x.IssuedToday
+	}
+	return 0
+}
+
+func (x *PersonLimitsUsage) GetExposure() *Money {
+	if x != nil {
+		return x.Exposure
+	}
+	return nil
+}
+
+func (x *PersonLimitsUsage) GetUnlimitedCard() bool {
+	if x != nil {
+		return x.UnlimitedCard
+	}
+	return false
+}
+
+type ListPersonLimitsRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListPersonLimitsRequest) Reset() {
+	*x = ListPersonLimitsRequest{}
+	mi := &file_cards_v2_issuing_proto_msgTypes[38]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListPersonLimitsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListPersonLimitsRequest) ProtoMessage() {}
+
+func (x *ListPersonLimitsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_cards_v2_issuing_proto_msgTypes[38]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListPersonLimitsRequest.ProtoReflect.Descriptor instead.
+func (*ListPersonLimitsRequest) Descriptor() ([]byte, []int) {
+	return file_cards_v2_issuing_proto_rawDescGZIP(), []int{38}
+}
+
+type ListPersonLimitsResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Limits        []*PersonLimits        `protobuf:"bytes,1,rep,name=limits,proto3" json:"limits,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListPersonLimitsResponse) Reset() {
+	*x = ListPersonLimitsResponse{}
+	mi := &file_cards_v2_issuing_proto_msgTypes[39]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListPersonLimitsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListPersonLimitsResponse) ProtoMessage() {}
+
+func (x *ListPersonLimitsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_cards_v2_issuing_proto_msgTypes[39]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListPersonLimitsResponse.ProtoReflect.Descriptor instead.
+func (*ListPersonLimitsResponse) Descriptor() ([]byte, []int) {
+	return file_cards_v2_issuing_proto_rawDescGZIP(), []int{39}
+}
+
+func (x *ListPersonLimitsResponse) GetLimits() []*PersonLimits {
+	if x != nil {
+		return x.Limits
+	}
+	return nil
+}
+
+type SavePersonLimitsRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Limits        *PersonLimits          `protobuf:"bytes,1,opt,name=limits,proto3" json:"limits,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SavePersonLimitsRequest) Reset() {
+	*x = SavePersonLimitsRequest{}
+	mi := &file_cards_v2_issuing_proto_msgTypes[40]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SavePersonLimitsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SavePersonLimitsRequest) ProtoMessage() {}
+
+func (x *SavePersonLimitsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_cards_v2_issuing_proto_msgTypes[40]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SavePersonLimitsRequest.ProtoReflect.Descriptor instead.
+func (*SavePersonLimitsRequest) Descriptor() ([]byte, []int) {
+	return file_cards_v2_issuing_proto_rawDescGZIP(), []int{40}
+}
+
+func (x *SavePersonLimitsRequest) GetLimits() *PersonLimits {
+	if x != nil {
+		return x.Limits
+	}
+	return nil
+}
+
+type SavePersonLimitsResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Limits        *PersonLimits          `protobuf:"bytes,1,opt,name=limits,proto3" json:"limits,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SavePersonLimitsResponse) Reset() {
+	*x = SavePersonLimitsResponse{}
+	mi := &file_cards_v2_issuing_proto_msgTypes[41]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SavePersonLimitsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SavePersonLimitsResponse) ProtoMessage() {}
+
+func (x *SavePersonLimitsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_cards_v2_issuing_proto_msgTypes[41]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SavePersonLimitsResponse.ProtoReflect.Descriptor instead.
+func (*SavePersonLimitsResponse) Descriptor() ([]byte, []int) {
+	return file_cards_v2_issuing_proto_rawDescGZIP(), []int{41}
+}
+
+func (x *SavePersonLimitsResponse) GetLimits() *PersonLimits {
+	if x != nil {
+		return x.Limits
+	}
+	return nil
+}
+
+type DeletePersonLimitsRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	PersonId      string                 `protobuf:"bytes,1,opt,name=person_id,json=personId,proto3" json:"person_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DeletePersonLimitsRequest) Reset() {
+	*x = DeletePersonLimitsRequest{}
+	mi := &file_cards_v2_issuing_proto_msgTypes[42]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DeletePersonLimitsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DeletePersonLimitsRequest) ProtoMessage() {}
+
+func (x *DeletePersonLimitsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_cards_v2_issuing_proto_msgTypes[42]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DeletePersonLimitsRequest.ProtoReflect.Descriptor instead.
+func (*DeletePersonLimitsRequest) Descriptor() ([]byte, []int) {
+	return file_cards_v2_issuing_proto_rawDescGZIP(), []int{42}
+}
+
+func (x *DeletePersonLimitsRequest) GetPersonId() string {
+	if x != nil {
+		return x.PersonId
+	}
+	return ""
+}
+
+type DeletePersonLimitsResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DeletePersonLimitsResponse) Reset() {
+	*x = DeletePersonLimitsResponse{}
+	mi := &file_cards_v2_issuing_proto_msgTypes[43]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DeletePersonLimitsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DeletePersonLimitsResponse) ProtoMessage() {}
+
+func (x *DeletePersonLimitsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_cards_v2_issuing_proto_msgTypes[43]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DeletePersonLimitsResponse.ProtoReflect.Descriptor instead.
+func (*DeletePersonLimitsResponse) Descriptor() ([]byte, []int) {
+	return file_cards_v2_issuing_proto_rawDescGZIP(), []int{43}
+}
+
+type MintWebhookTokenRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// A label, so two tokens can be told apart while a rotation is in flight.
+	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	// The provider whose deliveries the token admits.
+	IssuerAccountId string `protobuf:"bytes,2,opt,name=issuer_account_id,json=issuerAccountId,proto3" json:"issuer_account_id,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
+}
+
+func (x *MintWebhookTokenRequest) Reset() {
+	*x = MintWebhookTokenRequest{}
+	mi := &file_cards_v2_issuing_proto_msgTypes[44]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *MintWebhookTokenRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*MintWebhookTokenRequest) ProtoMessage() {}
+
+func (x *MintWebhookTokenRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_cards_v2_issuing_proto_msgTypes[44]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use MintWebhookTokenRequest.ProtoReflect.Descriptor instead.
+func (*MintWebhookTokenRequest) Descriptor() ([]byte, []int) {
+	return file_cards_v2_issuing_proto_rawDescGZIP(), []int{44}
+}
+
+func (x *MintWebhookTokenRequest) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *MintWebhookTokenRequest) GetIssuerAccountId() string {
+	if x != nil {
+		return x.IssuerAccountId
+	}
+	return ""
+}
+
+type MintWebhookTokenResponse struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	Id    string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	// The whole URL to paste into the provider's settings, secret included.
+	// Shown once.
+	WebhookUrl    string `protobuf:"bytes,2,opt,name=webhook_url,json=webhookUrl,proto3" json:"webhook_url,omitempty"`
+	TokenPrefix   string `protobuf:"bytes,3,opt,name=token_prefix,json=tokenPrefix,proto3" json:"token_prefix,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *MintWebhookTokenResponse) Reset() {
+	*x = MintWebhookTokenResponse{}
+	mi := &file_cards_v2_issuing_proto_msgTypes[45]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *MintWebhookTokenResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*MintWebhookTokenResponse) ProtoMessage() {}
+
+func (x *MintWebhookTokenResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_cards_v2_issuing_proto_msgTypes[45]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use MintWebhookTokenResponse.ProtoReflect.Descriptor instead.
+func (*MintWebhookTokenResponse) Descriptor() ([]byte, []int) {
+	return file_cards_v2_issuing_proto_rawDescGZIP(), []int{45}
+}
+
+func (x *MintWebhookTokenResponse) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *MintWebhookTokenResponse) GetWebhookUrl() string {
+	if x != nil {
+		return x.WebhookUrl
+	}
+	return ""
+}
+
+func (x *MintWebhookTokenResponse) GetTokenPrefix() string {
+	if x != nil {
+		return x.TokenPrefix
+	}
+	return ""
+}
+
+type RevokeWebhookTokenRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RevokeWebhookTokenRequest) Reset() {
+	*x = RevokeWebhookTokenRequest{}
+	mi := &file_cards_v2_issuing_proto_msgTypes[46]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RevokeWebhookTokenRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RevokeWebhookTokenRequest) ProtoMessage() {}
+
+func (x *RevokeWebhookTokenRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_cards_v2_issuing_proto_msgTypes[46]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RevokeWebhookTokenRequest.ProtoReflect.Descriptor instead.
+func (*RevokeWebhookTokenRequest) Descriptor() ([]byte, []int) {
+	return file_cards_v2_issuing_proto_rawDescGZIP(), []int{46}
+}
+
+func (x *RevokeWebhookTokenRequest) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+type RevokeWebhookTokenResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Revoked       bool                   `protobuf:"varint,1,opt,name=revoked,proto3" json:"revoked,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RevokeWebhookTokenResponse) Reset() {
+	*x = RevokeWebhookTokenResponse{}
+	mi := &file_cards_v2_issuing_proto_msgTypes[47]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RevokeWebhookTokenResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RevokeWebhookTokenResponse) ProtoMessage() {}
+
+func (x *RevokeWebhookTokenResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_cards_v2_issuing_proto_msgTypes[47]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RevokeWebhookTokenResponse.ProtoReflect.Descriptor instead.
+func (*RevokeWebhookTokenResponse) Descriptor() ([]byte, []int) {
+	return file_cards_v2_issuing_proto_rawDescGZIP(), []int{47}
+}
+
+func (x *RevokeWebhookTokenResponse) GetRevoked() bool {
+	if x != nil {
+		return x.Revoked
+	}
+	return false
+}
+
+type APIKey struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	KeyPrefix     string                 `protobuf:"bytes,3,opt,name=key_prefix,json=keyPrefix,proto3" json:"key_prefix,omitempty"`
+	Name          string                 `protobuf:"bytes,4,opt,name=name,proto3" json:"name,omitempty"`
+	Scopes        []string               `protobuf:"bytes,5,rep,name=scopes,proto3" json:"scopes,omitempty"`
+	LastUsedAt    *timestamppb.Timestamp `protobuf:"bytes,6,opt,name=last_used_at,json=lastUsedAt,proto3,oneof" json:"last_used_at,omitempty"`
+	ExpiresAt     *timestamppb.Timestamp `protobuf:"bytes,7,opt,name=expires_at,json=expiresAt,proto3,oneof" json:"expires_at,omitempty"`
+	CreatedAt     *timestamppb.Timestamp `protobuf:"bytes,8,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	UserSub       *string                `protobuf:"bytes,9,opt,name=user_sub,json=userSub,proto3,oneof" json:"user_sub,omitempty"`
+	UserEmail     *string                `protobuf:"bytes,10,opt,name=user_email,json=userEmail,proto3,oneof" json:"user_email,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *APIKey) Reset() {
+	*x = APIKey{}
+	mi := &file_cards_v2_issuing_proto_msgTypes[48]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *APIKey) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*APIKey) ProtoMessage() {}
+
+func (x *APIKey) ProtoReflect() protoreflect.Message {
+	mi := &file_cards_v2_issuing_proto_msgTypes[48]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use APIKey.ProtoReflect.Descriptor instead.
+func (*APIKey) Descriptor() ([]byte, []int) {
+	return file_cards_v2_issuing_proto_rawDescGZIP(), []int{48}
+}
+
+func (x *APIKey) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *APIKey) GetKeyPrefix() string {
+	if x != nil {
+		return x.KeyPrefix
+	}
+	return ""
+}
+
+func (x *APIKey) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *APIKey) GetScopes() []string {
+	if x != nil {
+		return x.Scopes
+	}
+	return nil
+}
+
+func (x *APIKey) GetLastUsedAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.LastUsedAt
+	}
+	return nil
+}
+
+func (x *APIKey) GetExpiresAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.ExpiresAt
+	}
+	return nil
+}
+
+func (x *APIKey) GetCreatedAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.CreatedAt
+	}
+	return nil
+}
+
+func (x *APIKey) GetUserSub() string {
+	if x != nil && x.UserSub != nil {
+		return *x.UserSub
+	}
+	return ""
+}
+
+func (x *APIKey) GetUserEmail() string {
+	if x != nil && x.UserEmail != nil {
+		return *x.UserEmail
+	}
+	return ""
+}
+
+type CreateAPIKeyRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Name          string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	Scopes        []string               `protobuf:"bytes,2,rep,name=scopes,proto3" json:"scopes,omitempty"`
+	ExpiresAt     *timestamppb.Timestamp `protobuf:"bytes,3,opt,name=expires_at,json=expiresAt,proto3,oneof" json:"expires_at,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CreateAPIKeyRequest) Reset() {
+	*x = CreateAPIKeyRequest{}
+	mi := &file_cards_v2_issuing_proto_msgTypes[49]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CreateAPIKeyRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CreateAPIKeyRequest) ProtoMessage() {}
+
+func (x *CreateAPIKeyRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_cards_v2_issuing_proto_msgTypes[49]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CreateAPIKeyRequest.ProtoReflect.Descriptor instead.
+func (*CreateAPIKeyRequest) Descriptor() ([]byte, []int) {
+	return file_cards_v2_issuing_proto_rawDescGZIP(), []int{49}
+}
+
+func (x *CreateAPIKeyRequest) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *CreateAPIKeyRequest) GetScopes() []string {
+	if x != nil {
+		return x.Scopes
+	}
+	return nil
+}
+
+func (x *CreateAPIKeyRequest) GetExpiresAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.ExpiresAt
+	}
+	return nil
+}
+
+type CreateAPIKeyResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ApiKey        *APIKey                `protobuf:"bytes,1,opt,name=api_key,json=apiKey,proto3" json:"api_key,omitempty"`
+	Key           string                 `protobuf:"bytes,2,opt,name=key,proto3" json:"key,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CreateAPIKeyResponse) Reset() {
+	*x = CreateAPIKeyResponse{}
+	mi := &file_cards_v2_issuing_proto_msgTypes[50]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CreateAPIKeyResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CreateAPIKeyResponse) ProtoMessage() {}
+
+func (x *CreateAPIKeyResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_cards_v2_issuing_proto_msgTypes[50]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CreateAPIKeyResponse.ProtoReflect.Descriptor instead.
+func (*CreateAPIKeyResponse) Descriptor() ([]byte, []int) {
+	return file_cards_v2_issuing_proto_rawDescGZIP(), []int{50}
+}
+
+func (x *CreateAPIKeyResponse) GetApiKey() *APIKey {
+	if x != nil {
+		return x.ApiKey
+	}
+	return nil
+}
+
+func (x *CreateAPIKeyResponse) GetKey() string {
+	if x != nil {
+		return x.Key
+	}
+	return ""
+}
+
+type ListAPIKeysRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListAPIKeysRequest) Reset() {
+	*x = ListAPIKeysRequest{}
+	mi := &file_cards_v2_issuing_proto_msgTypes[51]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListAPIKeysRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListAPIKeysRequest) ProtoMessage() {}
+
+func (x *ListAPIKeysRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_cards_v2_issuing_proto_msgTypes[51]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListAPIKeysRequest.ProtoReflect.Descriptor instead.
+func (*ListAPIKeysRequest) Descriptor() ([]byte, []int) {
+	return file_cards_v2_issuing_proto_rawDescGZIP(), []int{51}
+}
+
+type ListAPIKeysResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ApiKeys       []*APIKey              `protobuf:"bytes,1,rep,name=api_keys,json=apiKeys,proto3" json:"api_keys,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListAPIKeysResponse) Reset() {
+	*x = ListAPIKeysResponse{}
+	mi := &file_cards_v2_issuing_proto_msgTypes[52]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListAPIKeysResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListAPIKeysResponse) ProtoMessage() {}
+
+func (x *ListAPIKeysResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_cards_v2_issuing_proto_msgTypes[52]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListAPIKeysResponse.ProtoReflect.Descriptor instead.
+func (*ListAPIKeysResponse) Descriptor() ([]byte, []int) {
+	return file_cards_v2_issuing_proto_rawDescGZIP(), []int{52}
+}
+
+func (x *ListAPIKeysResponse) GetApiKeys() []*APIKey {
+	if x != nil {
+		return x.ApiKeys
+	}
+	return nil
+}
+
+type RevokeAPIKeyRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RevokeAPIKeyRequest) Reset() {
+	*x = RevokeAPIKeyRequest{}
+	mi := &file_cards_v2_issuing_proto_msgTypes[53]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RevokeAPIKeyRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RevokeAPIKeyRequest) ProtoMessage() {}
+
+func (x *RevokeAPIKeyRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_cards_v2_issuing_proto_msgTypes[53]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RevokeAPIKeyRequest.ProtoReflect.Descriptor instead.
+func (*RevokeAPIKeyRequest) Descriptor() ([]byte, []int) {
+	return file_cards_v2_issuing_proto_rawDescGZIP(), []int{53}
+}
+
+func (x *RevokeAPIKeyRequest) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+type RevokeAPIKeyResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RevokeAPIKeyResponse) Reset() {
+	*x = RevokeAPIKeyResponse{}
+	mi := &file_cards_v2_issuing_proto_msgTypes[54]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RevokeAPIKeyResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RevokeAPIKeyResponse) ProtoMessage() {}
+
+func (x *RevokeAPIKeyResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_cards_v2_issuing_proto_msgTypes[54]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RevokeAPIKeyResponse.ProtoReflect.Descriptor instead.
+func (*RevokeAPIKeyResponse) Descriptor() ([]byte, []int) {
+	return file_cards_v2_issuing_proto_rawDescGZIP(), []int{54}
+}
+
 type TopUpStrategy_Off struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	unknownFields protoimpl.UnknownFields
@@ -2438,7 +3459,7 @@ type TopUpStrategy_Off struct {
 
 func (x *TopUpStrategy_Off) Reset() {
 	*x = TopUpStrategy_Off{}
-	mi := &file_cards_v2_issuing_proto_msgTypes[36]
+	mi := &file_cards_v2_issuing_proto_msgTypes[55]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2450,7 +3471,7 @@ func (x *TopUpStrategy_Off) String() string {
 func (*TopUpStrategy_Off) ProtoMessage() {}
 
 func (x *TopUpStrategy_Off) ProtoReflect() protoreflect.Message {
-	mi := &file_cards_v2_issuing_proto_msgTypes[36]
+	mi := &file_cards_v2_issuing_proto_msgTypes[55]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2475,7 +3496,7 @@ type TopUpStrategy_Manual struct {
 
 func (x *TopUpStrategy_Manual) Reset() {
 	*x = TopUpStrategy_Manual{}
-	mi := &file_cards_v2_issuing_proto_msgTypes[37]
+	mi := &file_cards_v2_issuing_proto_msgTypes[56]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2487,7 +3508,7 @@ func (x *TopUpStrategy_Manual) String() string {
 func (*TopUpStrategy_Manual) ProtoMessage() {}
 
 func (x *TopUpStrategy_Manual) ProtoReflect() protoreflect.Message {
-	mi := &file_cards_v2_issuing_proto_msgTypes[37]
+	mi := &file_cards_v2_issuing_proto_msgTypes[56]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2514,7 +3535,7 @@ type TopUpStrategy_Threshold struct {
 
 func (x *TopUpStrategy_Threshold) Reset() {
 	*x = TopUpStrategy_Threshold{}
-	mi := &file_cards_v2_issuing_proto_msgTypes[38]
+	mi := &file_cards_v2_issuing_proto_msgTypes[57]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2526,7 +3547,7 @@ func (x *TopUpStrategy_Threshold) String() string {
 func (*TopUpStrategy_Threshold) ProtoMessage() {}
 
 func (x *TopUpStrategy_Threshold) ProtoReflect() protoreflect.Message {
-	mi := &file_cards_v2_issuing_proto_msgTypes[38]
+	mi := &file_cards_v2_issuing_proto_msgTypes[57]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2738,7 +3759,85 @@ const file_cards_v2_issuing_proto_rawDesc = "" +
 	"\aprofile\x18\x01 \x01(\v2\x17.cards.v2.HolderProfileR\aprofile\"6\n" +
 	"\x1bArchiveHolderProfileRequest\x12\x17\n" +
 	"\x02id\x18\x01 \x01(\tB\a\xbaH\x04r\x02\x10\x01R\x02id\"\x1e\n" +
-	"\x1cArchiveHolderProfileResponse*T\n" +
+	"\x1cArchiveHolderProfileResponse\"\x8f\x04\n" +
+	"\fPersonLimits\x123\n" +
+	"\x06person\x18\x01 \x01(\v2\x13.cards.v2.PrincipalB\x06\xbaH\x03\xc8\x01\x01R\x06person\x12*\n" +
+	"\x11issuer_account_id\x18\x02 \x01(\tR\x0fissuerAccountId\x122\n" +
+	"\x0emax_open_cards\x18\x03 \x01(\x05B\a\xbaH\x04\x1a\x02 \x00H\x00R\fmaxOpenCards\x88\x01\x01\x127\n" +
+	"\x11max_cards_per_day\x18\x04 \x01(\x05B\a\xbaH\x04\x1a\x02 \x00H\x01R\x0emaxCardsPerDay\x88\x01\x01\x12:\n" +
+	"\x0emax_card_limit\x18\x05 \x01(\v2\x0f.cards.v2.MoneyH\x02R\fmaxCardLimit\x88\x01\x01\x12,\n" +
+	"\x06budget\x18\x06 \x01(\v2\x0f.cards.v2.MoneyH\x03R\x06budget\x88\x01\x01\x12\x12\n" +
+	"\x04note\x18\a \x01(\tR\x04note\x121\n" +
+	"\x05usage\x18\b \x01(\v2\x1b.cards.v2.PersonLimitsUsageR\x05usage\x129\n" +
+	"\n" +
+	"updated_at\x18\t \x01(\v2\x1a.google.protobuf.TimestampR\tupdatedAtB\x11\n" +
+	"\x0f_max_open_cardsB\x14\n" +
+	"\x12_max_cards_per_dayB\x11\n" +
+	"\x0f_max_card_limitB\t\n" +
+	"\a_budget\"\xa9\x01\n" +
+	"\x11PersonLimitsUsage\x12\x1d\n" +
+	"\n" +
+	"open_cards\x18\x01 \x01(\x05R\topenCards\x12!\n" +
+	"\fissued_today\x18\x02 \x01(\x05R\vissuedToday\x12+\n" +
+	"\bexposure\x18\x03 \x01(\v2\x0f.cards.v2.MoneyR\bexposure\x12%\n" +
+	"\x0eunlimited_card\x18\x04 \x01(\bR\runlimitedCard\"\x19\n" +
+	"\x17ListPersonLimitsRequest\"J\n" +
+	"\x18ListPersonLimitsResponse\x12.\n" +
+	"\x06limits\x18\x01 \x03(\v2\x16.cards.v2.PersonLimitsR\x06limits\"Q\n" +
+	"\x17SavePersonLimitsRequest\x126\n" +
+	"\x06limits\x18\x01 \x01(\v2\x16.cards.v2.PersonLimitsB\x06\xbaH\x03\xc8\x01\x01R\x06limits\"J\n" +
+	"\x18SavePersonLimitsResponse\x12.\n" +
+	"\x06limits\x18\x01 \x01(\v2\x16.cards.v2.PersonLimitsR\x06limits\"A\n" +
+	"\x19DeletePersonLimitsRequest\x12$\n" +
+	"\tperson_id\x18\x01 \x01(\tB\a\xbaH\x04r\x02\x10\x01R\bpersonId\"\x1c\n" +
+	"\x1aDeletePersonLimitsResponse\"c\n" +
+	"\x17MintWebhookTokenRequest\x12\x12\n" +
+	"\x04name\x18\x01 \x01(\tR\x04name\x124\n" +
+	"\x11issuer_account_id\x18\x02 \x01(\tB\b\xbaH\x05r\x03\xb0\x01\x01R\x0fissuerAccountId\"n\n" +
+	"\x18MintWebhookTokenResponse\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1f\n" +
+	"\vwebhook_url\x18\x02 \x01(\tR\n" +
+	"webhookUrl\x12!\n" +
+	"\ftoken_prefix\x18\x03 \x01(\tR\vtokenPrefix\"5\n" +
+	"\x19RevokeWebhookTokenRequest\x12\x18\n" +
+	"\x02id\x18\x01 \x01(\tB\b\xbaH\x05r\x03\xb0\x01\x01R\x02id\"6\n" +
+	"\x1aRevokeWebhookTokenResponse\x12\x18\n" +
+	"\arevoked\x18\x01 \x01(\bR\arevoked\"\xa1\x03\n" +
+	"\x06APIKey\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1d\n" +
+	"\n" +
+	"key_prefix\x18\x03 \x01(\tR\tkeyPrefix\x12\x12\n" +
+	"\x04name\x18\x04 \x01(\tR\x04name\x12\x16\n" +
+	"\x06scopes\x18\x05 \x03(\tR\x06scopes\x12A\n" +
+	"\flast_used_at\x18\x06 \x01(\v2\x1a.google.protobuf.TimestampH\x00R\n" +
+	"lastUsedAt\x88\x01\x01\x12>\n" +
+	"\n" +
+	"expires_at\x18\a \x01(\v2\x1a.google.protobuf.TimestampH\x01R\texpiresAt\x88\x01\x01\x129\n" +
+	"\n" +
+	"created_at\x18\b \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\x12\x1e\n" +
+	"\buser_sub\x18\t \x01(\tH\x02R\auserSub\x88\x01\x01\x12\"\n" +
+	"\n" +
+	"user_email\x18\n" +
+	" \x01(\tH\x03R\tuserEmail\x88\x01\x01B\x0f\n" +
+	"\r_last_used_atB\r\n" +
+	"\v_expires_atB\v\n" +
+	"\t_user_subB\r\n" +
+	"\v_user_email\"\x99\x01\n" +
+	"\x13CreateAPIKeyRequest\x12\x1b\n" +
+	"\x04name\x18\x01 \x01(\tB\a\xbaH\x04r\x02\x10\x01R\x04name\x12\x16\n" +
+	"\x06scopes\x18\x02 \x03(\tR\x06scopes\x12>\n" +
+	"\n" +
+	"expires_at\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampH\x00R\texpiresAt\x88\x01\x01B\r\n" +
+	"\v_expires_at\"S\n" +
+	"\x14CreateAPIKeyResponse\x12)\n" +
+	"\aapi_key\x18\x01 \x01(\v2\x10.cards.v2.APIKeyR\x06apiKey\x12\x10\n" +
+	"\x03key\x18\x02 \x01(\tR\x03key\"\x14\n" +
+	"\x12ListAPIKeysRequest\"B\n" +
+	"\x13ListAPIKeysResponse\x12+\n" +
+	"\bapi_keys\x18\x01 \x03(\v2\x10.cards.v2.APIKeyR\aapiKeys\"/\n" +
+	"\x13RevokeAPIKeyRequest\x12\x18\n" +
+	"\x02id\x18\x01 \x01(\tB\b\xbaH\x05r\x03\xb0\x01\x01R\x02id\"\x16\n" +
+	"\x14RevokeAPIKeyResponse*T\n" +
 	"\tIssueMode\x12\x1a\n" +
 	"\x16ISSUE_MODE_UNSPECIFIED\x10\x00\x12\x17\n" +
 	"\x13ISSUE_MODE_PLATFORM\x10\x01\x12\x12\n" +
@@ -2750,8 +3849,13 @@ const file_cards_v2_issuing_proto_rawDesc = "" +
 	"\fFEE_KIND_TXN\x10\x03\x12\x14\n" +
 	"\x10FEE_KIND_DECLINE\x10\x04\x12\x0f\n" +
 	"\vFEE_KIND_FX\x10\x05\x12\x13\n" +
-	"\x0fFEE_KIND_REFUND\x10\x062\x9b\t\n" +
-	"\x0eIssuingService\x12J\n" +
+	"\x0fFEE_KIND_REFUND\x10\x062\xd8\x0e\n" +
+	"\x0eIssuingService\x12Y\n" +
+	"\x10MintWebhookToken\x12!.cards.v2.MintWebhookTokenRequest\x1a\".cards.v2.MintWebhookTokenResponse\x12_\n" +
+	"\x12RevokeWebhookToken\x12#.cards.v2.RevokeWebhookTokenRequest\x1a$.cards.v2.RevokeWebhookTokenResponse\x12M\n" +
+	"\fCreateAPIKey\x12\x1d.cards.v2.CreateAPIKeyRequest\x1a\x1e.cards.v2.CreateAPIKeyResponse\x12J\n" +
+	"\vListAPIKeys\x12\x1c.cards.v2.ListAPIKeysRequest\x1a\x1d.cards.v2.ListAPIKeysResponse\x12M\n" +
+	"\fRevokeAPIKey\x12\x1d.cards.v2.RevokeAPIKeyRequest\x1a\x1e.cards.v2.RevokeAPIKeyResponse\x12J\n" +
 	"\vGetSettings\x12\x1c.cards.v2.GetSettingsRequest\x1a\x1d.cards.v2.GetSettingsResponse\x12S\n" +
 	"\x0eUpdateSettings\x12\x1f.cards.v2.UpdateSettingsRequest\x1a .cards.v2.UpdateSettingsResponse\x12M\n" +
 	"\fListAccounts\x12\x1d.cards.v2.ListAccountsRequest\x1a\x1e.cards.v2.ListAccountsResponse\x12S\n" +
@@ -2766,7 +3870,10 @@ const file_cards_v2_issuing_proto_rawDesc = "" +
 	"\x05TopUp\x12\x16.cards.v2.TopUpRequest\x1a\x17.cards.v2.TopUpResponse\x12_\n" +
 	"\x12ListHolderProfiles\x12#.cards.v2.ListHolderProfilesRequest\x1a$.cards.v2.ListHolderProfilesResponse\x12\\\n" +
 	"\x11SaveHolderProfile\x12\".cards.v2.SaveHolderProfileRequest\x1a#.cards.v2.SaveHolderProfileResponse\x12e\n" +
-	"\x14ArchiveHolderProfile\x12%.cards.v2.ArchiveHolderProfileRequest\x1a&.cards.v2.ArchiveHolderProfileResponseB\xaa\x01\n" +
+	"\x14ArchiveHolderProfile\x12%.cards.v2.ArchiveHolderProfileRequest\x1a&.cards.v2.ArchiveHolderProfileResponse\x12Y\n" +
+	"\x10ListPersonLimits\x12!.cards.v2.ListPersonLimitsRequest\x1a\".cards.v2.ListPersonLimitsResponse\x12Y\n" +
+	"\x10SavePersonLimits\x12!.cards.v2.SavePersonLimitsRequest\x1a\".cards.v2.SavePersonLimitsResponse\x12_\n" +
+	"\x12DeletePersonLimits\x12#.cards.v2.DeletePersonLimitsRequest\x1a$.cards.v2.DeletePersonLimitsResponseB\xaa\x01\n" +
 	"\fcom.cards.v2B\fIssuingProtoP\x01ZKgithub.com/fox1ck-org/vibe-cards-client/v2/conformance/gen/cards/v2;cardsv2\xa2\x02\x03CXX\xaa\x02\bCards.V2\xca\x02\bCards\\V2\xe2\x02\x14Cards\\V2\\GPBMetadata\xea\x02\tCards::V2b\x06proto3"
 
 var (
@@ -2782,7 +3889,7 @@ func file_cards_v2_issuing_proto_rawDescGZIP() []byte {
 }
 
 var file_cards_v2_issuing_proto_enumTypes = make([]protoimpl.EnumInfo, 5)
-var file_cards_v2_issuing_proto_msgTypes = make([]protoimpl.MessageInfo, 40)
+var file_cards_v2_issuing_proto_msgTypes = make([]protoimpl.MessageInfo, 59)
 var file_cards_v2_issuing_proto_goTypes = []any{
 	(IssueMode)(0),                       // 0: cards.v2.IssueMode
 	(FeeKind)(0),                         // 1: cards.v2.FeeKind
@@ -2825,105 +3932,155 @@ var file_cards_v2_issuing_proto_goTypes = []any{
 	(*SaveHolderProfileResponse)(nil),    // 38: cards.v2.SaveHolderProfileResponse
 	(*ArchiveHolderProfileRequest)(nil),  // 39: cards.v2.ArchiveHolderProfileRequest
 	(*ArchiveHolderProfileResponse)(nil), // 40: cards.v2.ArchiveHolderProfileResponse
-	(*TopUpStrategy_Off)(nil),            // 41: cards.v2.TopUpStrategy.Off
-	(*TopUpStrategy_Manual)(nil),         // 42: cards.v2.TopUpStrategy.Manual
-	(*TopUpStrategy_Threshold)(nil),      // 43: cards.v2.TopUpStrategy.Threshold
-	nil,                                  // 44: cards.v2.ConnectAccountRequest.CredentialsEntry
-	(*Money)(nil),                        // 45: cards.v2.Money
-	(*timestamppb.Timestamp)(nil),        // 46: google.protobuf.Timestamp
-	(*Decimal)(nil),                      // 47: cards.v2.Decimal
-	(*Principal)(nil),                    // 48: cards.v2.Principal
-	(*TimeRange)(nil),                    // 49: cards.v2.TimeRange
-	(*PageRequest)(nil),                  // 50: cards.v2.PageRequest
-	(*PageResponse)(nil),                 // 51: cards.v2.PageResponse
-	(*HolderData)(nil),                   // 52: cards.v2.HolderData
+	(*PersonLimits)(nil),                 // 41: cards.v2.PersonLimits
+	(*PersonLimitsUsage)(nil),            // 42: cards.v2.PersonLimitsUsage
+	(*ListPersonLimitsRequest)(nil),      // 43: cards.v2.ListPersonLimitsRequest
+	(*ListPersonLimitsResponse)(nil),     // 44: cards.v2.ListPersonLimitsResponse
+	(*SavePersonLimitsRequest)(nil),      // 45: cards.v2.SavePersonLimitsRequest
+	(*SavePersonLimitsResponse)(nil),     // 46: cards.v2.SavePersonLimitsResponse
+	(*DeletePersonLimitsRequest)(nil),    // 47: cards.v2.DeletePersonLimitsRequest
+	(*DeletePersonLimitsResponse)(nil),   // 48: cards.v2.DeletePersonLimitsResponse
+	(*MintWebhookTokenRequest)(nil),      // 49: cards.v2.MintWebhookTokenRequest
+	(*MintWebhookTokenResponse)(nil),     // 50: cards.v2.MintWebhookTokenResponse
+	(*RevokeWebhookTokenRequest)(nil),    // 51: cards.v2.RevokeWebhookTokenRequest
+	(*RevokeWebhookTokenResponse)(nil),   // 52: cards.v2.RevokeWebhookTokenResponse
+	(*APIKey)(nil),                       // 53: cards.v2.APIKey
+	(*CreateAPIKeyRequest)(nil),          // 54: cards.v2.CreateAPIKeyRequest
+	(*CreateAPIKeyResponse)(nil),         // 55: cards.v2.CreateAPIKeyResponse
+	(*ListAPIKeysRequest)(nil),           // 56: cards.v2.ListAPIKeysRequest
+	(*ListAPIKeysResponse)(nil),          // 57: cards.v2.ListAPIKeysResponse
+	(*RevokeAPIKeyRequest)(nil),          // 58: cards.v2.RevokeAPIKeyRequest
+	(*RevokeAPIKeyResponse)(nil),         // 59: cards.v2.RevokeAPIKeyResponse
+	(*TopUpStrategy_Off)(nil),            // 60: cards.v2.TopUpStrategy.Off
+	(*TopUpStrategy_Manual)(nil),         // 61: cards.v2.TopUpStrategy.Manual
+	(*TopUpStrategy_Threshold)(nil),      // 62: cards.v2.TopUpStrategy.Threshold
+	nil,                                  // 63: cards.v2.ConnectAccountRequest.CredentialsEntry
+	(*Money)(nil),                        // 64: cards.v2.Money
+	(*timestamppb.Timestamp)(nil),        // 65: google.protobuf.Timestamp
+	(*Decimal)(nil),                      // 66: cards.v2.Decimal
+	(*Principal)(nil),                    // 67: cards.v2.Principal
+	(*TimeRange)(nil),                    // 68: cards.v2.TimeRange
+	(*PageRequest)(nil),                  // 69: cards.v2.PageRequest
+	(*PageResponse)(nil),                 // 70: cards.v2.PageResponse
+	(*HolderData)(nil),                   // 71: cards.v2.HolderData
 }
 var file_cards_v2_issuing_proto_depIdxs = []int32{
 	0,  // 0: cards.v2.IssuingSettings.mode:type_name -> cards.v2.IssueMode
 	6,  // 1: cards.v2.IssuingSettings.top_up:type_name -> cards.v2.TopUpStrategy
-	41, // 2: cards.v2.TopUpStrategy.off:type_name -> cards.v2.TopUpStrategy.Off
-	42, // 3: cards.v2.TopUpStrategy.manual:type_name -> cards.v2.TopUpStrategy.Manual
-	43, // 4: cards.v2.TopUpStrategy.threshold:type_name -> cards.v2.TopUpStrategy.Threshold
+	60, // 2: cards.v2.TopUpStrategy.off:type_name -> cards.v2.TopUpStrategy.Off
+	61, // 3: cards.v2.TopUpStrategy.manual:type_name -> cards.v2.TopUpStrategy.Manual
+	62, // 4: cards.v2.TopUpStrategy.threshold:type_name -> cards.v2.TopUpStrategy.Threshold
 	5,  // 5: cards.v2.GetSettingsResponse.settings:type_name -> cards.v2.IssuingSettings
 	0,  // 6: cards.v2.UpdateSettingsRequest.mode:type_name -> cards.v2.IssueMode
 	6,  // 7: cards.v2.UpdateSettingsRequest.top_up:type_name -> cards.v2.TopUpStrategy
 	5,  // 8: cards.v2.UpdateSettingsResponse.settings:type_name -> cards.v2.IssuingSettings
 	2,  // 9: cards.v2.IssuerAccount.owner:type_name -> cards.v2.IssuerAccount.Owner
-	45, // 10: cards.v2.IssuerAccount.balance:type_name -> cards.v2.Money
-	46, // 11: cards.v2.IssuerAccount.runs_out_at:type_name -> google.protobuf.Timestamp
+	64, // 10: cards.v2.IssuerAccount.balance:type_name -> cards.v2.Money
+	65, // 11: cards.v2.IssuerAccount.runs_out_at:type_name -> google.protobuf.Timestamp
 	11, // 12: cards.v2.ListAccountsResponse.accounts:type_name -> cards.v2.IssuerAccount
-	44, // 13: cards.v2.ConnectAccountRequest.credentials:type_name -> cards.v2.ConnectAccountRequest.CredentialsEntry
+	63, // 13: cards.v2.ConnectAccountRequest.credentials:type_name -> cards.v2.ConnectAccountRequest.CredentialsEntry
 	11, // 14: cards.v2.ConnectAccountResponse.account:type_name -> cards.v2.IssuerAccount
-	45, // 15: cards.v2.ConnectAccountResponse.balance:type_name -> cards.v2.Money
+	64, // 15: cards.v2.ConnectAccountResponse.balance:type_name -> cards.v2.Money
 	21, // 16: cards.v2.Bin.fee_terms:type_name -> cards.v2.FeeTerm
-	45, // 17: cards.v2.Bin.platform_issue_fee:type_name -> cards.v2.Money
-	47, // 18: cards.v2.Bin.platform_spend_percent:type_name -> cards.v2.Decimal
+	64, // 17: cards.v2.Bin.platform_issue_fee:type_name -> cards.v2.Money
+	66, // 18: cards.v2.Bin.platform_spend_percent:type_name -> cards.v2.Decimal
 	18, // 19: cards.v2.ListBinsResponse.bins:type_name -> cards.v2.Bin
 	1,  // 20: cards.v2.FeeTerm.kind:type_name -> cards.v2.FeeKind
-	47, // 21: cards.v2.FeeTerm.percent:type_name -> cards.v2.Decimal
-	45, // 22: cards.v2.FeeTerm.fixed:type_name -> cards.v2.Money
-	45, // 23: cards.v2.FeeTerm.min:type_name -> cards.v2.Money
-	45, // 24: cards.v2.FeeTerm.max:type_name -> cards.v2.Money
+	66, // 21: cards.v2.FeeTerm.percent:type_name -> cards.v2.Decimal
+	64, // 22: cards.v2.FeeTerm.fixed:type_name -> cards.v2.Money
+	64, // 23: cards.v2.FeeTerm.min:type_name -> cards.v2.Money
+	64, // 24: cards.v2.FeeTerm.max:type_name -> cards.v2.Money
 	3,  // 25: cards.v2.FeeTerm.source:type_name -> cards.v2.FeeTerm.Source
 	21, // 26: cards.v2.ListFeeTermsResponse.terms:type_name -> cards.v2.FeeTerm
 	21, // 27: cards.v2.SetFeeTermsRequest.terms:type_name -> cards.v2.FeeTerm
 	21, // 28: cards.v2.SetFeeTermsResponse.terms:type_name -> cards.v2.FeeTerm
-	45, // 29: cards.v2.GetBalanceResponse.balance:type_name -> cards.v2.Money
-	46, // 30: cards.v2.GetBalanceResponse.runs_out_at:type_name -> google.protobuf.Timestamp
+	64, // 29: cards.v2.GetBalanceResponse.balance:type_name -> cards.v2.Money
+	65, // 30: cards.v2.GetBalanceResponse.runs_out_at:type_name -> google.protobuf.Timestamp
 	4,  // 31: cards.v2.BalanceEntry.kind:type_name -> cards.v2.BalanceEntry.Kind
-	45, // 32: cards.v2.BalanceEntry.amount:type_name -> cards.v2.Money
-	45, // 33: cards.v2.BalanceEntry.balance_after:type_name -> cards.v2.Money
-	46, // 34: cards.v2.BalanceEntry.at:type_name -> google.protobuf.Timestamp
-	48, // 35: cards.v2.BalanceEntry.actor:type_name -> cards.v2.Principal
-	49, // 36: cards.v2.ListBalanceEntriesRequest.range:type_name -> cards.v2.TimeRange
+	64, // 32: cards.v2.BalanceEntry.amount:type_name -> cards.v2.Money
+	64, // 33: cards.v2.BalanceEntry.balance_after:type_name -> cards.v2.Money
+	65, // 34: cards.v2.BalanceEntry.at:type_name -> google.protobuf.Timestamp
+	67, // 35: cards.v2.BalanceEntry.actor:type_name -> cards.v2.Principal
+	68, // 36: cards.v2.ListBalanceEntriesRequest.range:type_name -> cards.v2.TimeRange
 	4,  // 37: cards.v2.ListBalanceEntriesRequest.kinds:type_name -> cards.v2.BalanceEntry.Kind
-	50, // 38: cards.v2.ListBalanceEntriesRequest.page:type_name -> cards.v2.PageRequest
+	69, // 38: cards.v2.ListBalanceEntriesRequest.page:type_name -> cards.v2.PageRequest
 	28, // 39: cards.v2.ListBalanceEntriesResponse.entries:type_name -> cards.v2.BalanceEntry
-	51, // 40: cards.v2.ListBalanceEntriesResponse.page:type_name -> cards.v2.PageResponse
-	48, // 41: cards.v2.TopUpRequest.person:type_name -> cards.v2.Principal
-	45, // 42: cards.v2.TopUpRequest.amount:type_name -> cards.v2.Money
-	45, // 43: cards.v2.TopUpResponse.balance:type_name -> cards.v2.Money
-	52, // 44: cards.v2.HolderProfile.holder:type_name -> cards.v2.HolderData
+	70, // 40: cards.v2.ListBalanceEntriesResponse.page:type_name -> cards.v2.PageResponse
+	67, // 41: cards.v2.TopUpRequest.person:type_name -> cards.v2.Principal
+	64, // 42: cards.v2.TopUpRequest.amount:type_name -> cards.v2.Money
+	64, // 43: cards.v2.TopUpResponse.balance:type_name -> cards.v2.Money
+	71, // 44: cards.v2.HolderProfile.holder:type_name -> cards.v2.HolderData
 	34, // 45: cards.v2.HolderProfile.applies_to:type_name -> cards.v2.HolderProfileScope
-	46, // 46: cards.v2.HolderProfile.archived_at:type_name -> google.protobuf.Timestamp
+	65, // 46: cards.v2.HolderProfile.archived_at:type_name -> google.protobuf.Timestamp
 	33, // 47: cards.v2.ListHolderProfilesResponse.profiles:type_name -> cards.v2.HolderProfile
 	33, // 48: cards.v2.SaveHolderProfileRequest.profile:type_name -> cards.v2.HolderProfile
 	33, // 49: cards.v2.SaveHolderProfileResponse.profile:type_name -> cards.v2.HolderProfile
-	45, // 50: cards.v2.TopUpStrategy.Threshold.below:type_name -> cards.v2.Money
-	45, // 51: cards.v2.TopUpStrategy.Threshold.up_to:type_name -> cards.v2.Money
-	7,  // 52: cards.v2.IssuingService.GetSettings:input_type -> cards.v2.GetSettingsRequest
-	9,  // 53: cards.v2.IssuingService.UpdateSettings:input_type -> cards.v2.UpdateSettingsRequest
-	12, // 54: cards.v2.IssuingService.ListAccounts:input_type -> cards.v2.ListAccountsRequest
-	14, // 55: cards.v2.IssuingService.ConnectAccount:input_type -> cards.v2.ConnectAccountRequest
-	16, // 56: cards.v2.IssuingService.DisconnectAccount:input_type -> cards.v2.DisconnectAccountRequest
-	19, // 57: cards.v2.IssuingService.ListBins:input_type -> cards.v2.ListBinsRequest
-	22, // 58: cards.v2.IssuingService.ListFeeTerms:input_type -> cards.v2.ListFeeTermsRequest
-	24, // 59: cards.v2.IssuingService.SetFeeTerms:input_type -> cards.v2.SetFeeTermsRequest
-	26, // 60: cards.v2.IssuingService.GetBalance:input_type -> cards.v2.GetBalanceRequest
-	29, // 61: cards.v2.IssuingService.ListBalanceEntries:input_type -> cards.v2.ListBalanceEntriesRequest
-	31, // 62: cards.v2.IssuingService.TopUp:input_type -> cards.v2.TopUpRequest
-	35, // 63: cards.v2.IssuingService.ListHolderProfiles:input_type -> cards.v2.ListHolderProfilesRequest
-	37, // 64: cards.v2.IssuingService.SaveHolderProfile:input_type -> cards.v2.SaveHolderProfileRequest
-	39, // 65: cards.v2.IssuingService.ArchiveHolderProfile:input_type -> cards.v2.ArchiveHolderProfileRequest
-	8,  // 66: cards.v2.IssuingService.GetSettings:output_type -> cards.v2.GetSettingsResponse
-	10, // 67: cards.v2.IssuingService.UpdateSettings:output_type -> cards.v2.UpdateSettingsResponse
-	13, // 68: cards.v2.IssuingService.ListAccounts:output_type -> cards.v2.ListAccountsResponse
-	15, // 69: cards.v2.IssuingService.ConnectAccount:output_type -> cards.v2.ConnectAccountResponse
-	17, // 70: cards.v2.IssuingService.DisconnectAccount:output_type -> cards.v2.DisconnectAccountResponse
-	20, // 71: cards.v2.IssuingService.ListBins:output_type -> cards.v2.ListBinsResponse
-	23, // 72: cards.v2.IssuingService.ListFeeTerms:output_type -> cards.v2.ListFeeTermsResponse
-	25, // 73: cards.v2.IssuingService.SetFeeTerms:output_type -> cards.v2.SetFeeTermsResponse
-	27, // 74: cards.v2.IssuingService.GetBalance:output_type -> cards.v2.GetBalanceResponse
-	30, // 75: cards.v2.IssuingService.ListBalanceEntries:output_type -> cards.v2.ListBalanceEntriesResponse
-	32, // 76: cards.v2.IssuingService.TopUp:output_type -> cards.v2.TopUpResponse
-	36, // 77: cards.v2.IssuingService.ListHolderProfiles:output_type -> cards.v2.ListHolderProfilesResponse
-	38, // 78: cards.v2.IssuingService.SaveHolderProfile:output_type -> cards.v2.SaveHolderProfileResponse
-	40, // 79: cards.v2.IssuingService.ArchiveHolderProfile:output_type -> cards.v2.ArchiveHolderProfileResponse
-	66, // [66:80] is the sub-list for method output_type
-	52, // [52:66] is the sub-list for method input_type
-	52, // [52:52] is the sub-list for extension type_name
-	52, // [52:52] is the sub-list for extension extendee
-	0,  // [0:52] is the sub-list for field type_name
+	67, // 50: cards.v2.PersonLimits.person:type_name -> cards.v2.Principal
+	64, // 51: cards.v2.PersonLimits.max_card_limit:type_name -> cards.v2.Money
+	64, // 52: cards.v2.PersonLimits.budget:type_name -> cards.v2.Money
+	42, // 53: cards.v2.PersonLimits.usage:type_name -> cards.v2.PersonLimitsUsage
+	65, // 54: cards.v2.PersonLimits.updated_at:type_name -> google.protobuf.Timestamp
+	64, // 55: cards.v2.PersonLimitsUsage.exposure:type_name -> cards.v2.Money
+	41, // 56: cards.v2.ListPersonLimitsResponse.limits:type_name -> cards.v2.PersonLimits
+	41, // 57: cards.v2.SavePersonLimitsRequest.limits:type_name -> cards.v2.PersonLimits
+	41, // 58: cards.v2.SavePersonLimitsResponse.limits:type_name -> cards.v2.PersonLimits
+	65, // 59: cards.v2.APIKey.last_used_at:type_name -> google.protobuf.Timestamp
+	65, // 60: cards.v2.APIKey.expires_at:type_name -> google.protobuf.Timestamp
+	65, // 61: cards.v2.APIKey.created_at:type_name -> google.protobuf.Timestamp
+	65, // 62: cards.v2.CreateAPIKeyRequest.expires_at:type_name -> google.protobuf.Timestamp
+	53, // 63: cards.v2.CreateAPIKeyResponse.api_key:type_name -> cards.v2.APIKey
+	53, // 64: cards.v2.ListAPIKeysResponse.api_keys:type_name -> cards.v2.APIKey
+	64, // 65: cards.v2.TopUpStrategy.Threshold.below:type_name -> cards.v2.Money
+	64, // 66: cards.v2.TopUpStrategy.Threshold.up_to:type_name -> cards.v2.Money
+	49, // 67: cards.v2.IssuingService.MintWebhookToken:input_type -> cards.v2.MintWebhookTokenRequest
+	51, // 68: cards.v2.IssuingService.RevokeWebhookToken:input_type -> cards.v2.RevokeWebhookTokenRequest
+	54, // 69: cards.v2.IssuingService.CreateAPIKey:input_type -> cards.v2.CreateAPIKeyRequest
+	56, // 70: cards.v2.IssuingService.ListAPIKeys:input_type -> cards.v2.ListAPIKeysRequest
+	58, // 71: cards.v2.IssuingService.RevokeAPIKey:input_type -> cards.v2.RevokeAPIKeyRequest
+	7,  // 72: cards.v2.IssuingService.GetSettings:input_type -> cards.v2.GetSettingsRequest
+	9,  // 73: cards.v2.IssuingService.UpdateSettings:input_type -> cards.v2.UpdateSettingsRequest
+	12, // 74: cards.v2.IssuingService.ListAccounts:input_type -> cards.v2.ListAccountsRequest
+	14, // 75: cards.v2.IssuingService.ConnectAccount:input_type -> cards.v2.ConnectAccountRequest
+	16, // 76: cards.v2.IssuingService.DisconnectAccount:input_type -> cards.v2.DisconnectAccountRequest
+	19, // 77: cards.v2.IssuingService.ListBins:input_type -> cards.v2.ListBinsRequest
+	22, // 78: cards.v2.IssuingService.ListFeeTerms:input_type -> cards.v2.ListFeeTermsRequest
+	24, // 79: cards.v2.IssuingService.SetFeeTerms:input_type -> cards.v2.SetFeeTermsRequest
+	26, // 80: cards.v2.IssuingService.GetBalance:input_type -> cards.v2.GetBalanceRequest
+	29, // 81: cards.v2.IssuingService.ListBalanceEntries:input_type -> cards.v2.ListBalanceEntriesRequest
+	31, // 82: cards.v2.IssuingService.TopUp:input_type -> cards.v2.TopUpRequest
+	35, // 83: cards.v2.IssuingService.ListHolderProfiles:input_type -> cards.v2.ListHolderProfilesRequest
+	37, // 84: cards.v2.IssuingService.SaveHolderProfile:input_type -> cards.v2.SaveHolderProfileRequest
+	39, // 85: cards.v2.IssuingService.ArchiveHolderProfile:input_type -> cards.v2.ArchiveHolderProfileRequest
+	43, // 86: cards.v2.IssuingService.ListPersonLimits:input_type -> cards.v2.ListPersonLimitsRequest
+	45, // 87: cards.v2.IssuingService.SavePersonLimits:input_type -> cards.v2.SavePersonLimitsRequest
+	47, // 88: cards.v2.IssuingService.DeletePersonLimits:input_type -> cards.v2.DeletePersonLimitsRequest
+	50, // 89: cards.v2.IssuingService.MintWebhookToken:output_type -> cards.v2.MintWebhookTokenResponse
+	52, // 90: cards.v2.IssuingService.RevokeWebhookToken:output_type -> cards.v2.RevokeWebhookTokenResponse
+	55, // 91: cards.v2.IssuingService.CreateAPIKey:output_type -> cards.v2.CreateAPIKeyResponse
+	57, // 92: cards.v2.IssuingService.ListAPIKeys:output_type -> cards.v2.ListAPIKeysResponse
+	59, // 93: cards.v2.IssuingService.RevokeAPIKey:output_type -> cards.v2.RevokeAPIKeyResponse
+	8,  // 94: cards.v2.IssuingService.GetSettings:output_type -> cards.v2.GetSettingsResponse
+	10, // 95: cards.v2.IssuingService.UpdateSettings:output_type -> cards.v2.UpdateSettingsResponse
+	13, // 96: cards.v2.IssuingService.ListAccounts:output_type -> cards.v2.ListAccountsResponse
+	15, // 97: cards.v2.IssuingService.ConnectAccount:output_type -> cards.v2.ConnectAccountResponse
+	17, // 98: cards.v2.IssuingService.DisconnectAccount:output_type -> cards.v2.DisconnectAccountResponse
+	20, // 99: cards.v2.IssuingService.ListBins:output_type -> cards.v2.ListBinsResponse
+	23, // 100: cards.v2.IssuingService.ListFeeTerms:output_type -> cards.v2.ListFeeTermsResponse
+	25, // 101: cards.v2.IssuingService.SetFeeTerms:output_type -> cards.v2.SetFeeTermsResponse
+	27, // 102: cards.v2.IssuingService.GetBalance:output_type -> cards.v2.GetBalanceResponse
+	30, // 103: cards.v2.IssuingService.ListBalanceEntries:output_type -> cards.v2.ListBalanceEntriesResponse
+	32, // 104: cards.v2.IssuingService.TopUp:output_type -> cards.v2.TopUpResponse
+	36, // 105: cards.v2.IssuingService.ListHolderProfiles:output_type -> cards.v2.ListHolderProfilesResponse
+	38, // 106: cards.v2.IssuingService.SaveHolderProfile:output_type -> cards.v2.SaveHolderProfileResponse
+	40, // 107: cards.v2.IssuingService.ArchiveHolderProfile:output_type -> cards.v2.ArchiveHolderProfileResponse
+	44, // 108: cards.v2.IssuingService.ListPersonLimits:output_type -> cards.v2.ListPersonLimitsResponse
+	46, // 109: cards.v2.IssuingService.SavePersonLimits:output_type -> cards.v2.SavePersonLimitsResponse
+	48, // 110: cards.v2.IssuingService.DeletePersonLimits:output_type -> cards.v2.DeletePersonLimitsResponse
+	89, // [89:111] is the sub-list for method output_type
+	67, // [67:89] is the sub-list for method input_type
+	67, // [67:67] is the sub-list for extension type_name
+	67, // [67:67] is the sub-list for extension extendee
+	0,  // [0:67] is the sub-list for field type_name
 }
 
 func init() { file_cards_v2_issuing_proto_init() }
@@ -2946,13 +4103,16 @@ func file_cards_v2_issuing_proto_init() {
 	file_cards_v2_issuing_proto_msgTypes[22].OneofWrappers = []any{}
 	file_cards_v2_issuing_proto_msgTypes[23].OneofWrappers = []any{}
 	file_cards_v2_issuing_proto_msgTypes[28].OneofWrappers = []any{}
+	file_cards_v2_issuing_proto_msgTypes[36].OneofWrappers = []any{}
+	file_cards_v2_issuing_proto_msgTypes[48].OneofWrappers = []any{}
+	file_cards_v2_issuing_proto_msgTypes[49].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_cards_v2_issuing_proto_rawDesc), len(file_cards_v2_issuing_proto_rawDesc)),
 			NumEnums:      5,
-			NumMessages:   40,
+			NumMessages:   59,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

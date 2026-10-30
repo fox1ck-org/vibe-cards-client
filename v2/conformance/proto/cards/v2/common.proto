@@ -4,7 +4,7 @@ syntax = "proto3";
 // a card, whose it is, who has it now, who it is shared with, where it is
 // used, how much it may spend, what happened.
 //
-// This is the sole card contract. What is not here on purpose, and must not
+// This is the only contract. What is not here on purpose, and must not
 // come back:
 //   - pools, groups, "free cards", stock to keep, "hold N in reserve": a card
 //     is issued, taken, shared, returned — nothing else;
@@ -165,7 +165,7 @@ enum ErrorReason {
   ERROR_REASON_NOT_FOUND = 1;
   // Visible, but the caller's role or right does not allow this action.
   ERROR_REASON_NOT_ALLOWED = 2;
-  // A limit — the card's, a rule's, the plan's — does not allow it.
+  // A limit — the card's, a rule's, the plan's, a person's frame — does not allow it.
   ERROR_REASON_LIMIT_REACHED = 3;
   // The organisation's balance does not cover it (PLATFORM issue mode).
   ERROR_REASON_INSUFFICIENT_BALANCE = 4;
@@ -182,8 +182,8 @@ enum ErrorReason {
   // Taking or using the card needs it to be the caller's or shared with the
   // caller with the USE right.
   ERROR_REASON_NOT_SHARED_FOR_USE = 9;
-  // Showing the number needs a reason.
-  ERROR_REASON_REASON_REQUIRED = 10;
+  reserved 10;
+  reserved "ERROR_REASON_REASON_REQUIRED";
   // The same person read the same card's number too recently.
   ERROR_REASON_COOLDOWN = 11;
   // The PAN ticket expired or was already redeemed.

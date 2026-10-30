@@ -8,7 +8,7 @@
 // a card, whose it is, who has it now, who it is shared with, where it is
 // used, how much it may spend, what happened.
 //
-// This is the sole card contract. What is not here on purpose, and must not
+// This is the only contract. What is not here on purpose, and must not
 // come back:
 //   - pools, groups, "free cards", stock to keep, "hold N in reserve": a card
 //     is issued, taken, shared, returned — nothing else;
@@ -235,7 +235,7 @@ const (
 	ErrorReason_ERROR_REASON_NOT_FOUND ErrorReason = 1
 	// Visible, but the caller's role or right does not allow this action.
 	ErrorReason_ERROR_REASON_NOT_ALLOWED ErrorReason = 2
-	// A limit — the card's, a rule's, the plan's — does not allow it.
+	// A limit — the card's, a rule's, the plan's, a person's frame — does not allow it.
 	ErrorReason_ERROR_REASON_LIMIT_REACHED ErrorReason = 3
 	// The organisation's balance does not cover it (PLATFORM issue mode).
 	ErrorReason_ERROR_REASON_INSUFFICIENT_BALANCE ErrorReason = 4
@@ -252,8 +252,6 @@ const (
 	// Taking or using the card needs it to be the caller's or shared with the
 	// caller with the USE right.
 	ErrorReason_ERROR_REASON_NOT_SHARED_FOR_USE ErrorReason = 9
-	// Showing the number needs a reason.
-	ErrorReason_ERROR_REASON_REASON_REQUIRED ErrorReason = 10
 	// The same person read the same card's number too recently.
 	ErrorReason_ERROR_REASON_COOLDOWN ErrorReason = 11
 	// The PAN ticket expired or was already redeemed.
@@ -292,7 +290,6 @@ var (
 		7:  "ERROR_REASON_CARD_NOT_ACTIVE",
 		8:  "ERROR_REASON_HELD_BY_OTHER",
 		9:  "ERROR_REASON_NOT_SHARED_FOR_USE",
-		10: "ERROR_REASON_REASON_REQUIRED",
 		11: "ERROR_REASON_COOLDOWN",
 		12: "ERROR_REASON_GRANT_SPENT",
 		13: "ERROR_REASON_CARD_UNREADABLE",
@@ -315,7 +312,6 @@ var (
 		"ERROR_REASON_CARD_NOT_ACTIVE":      7,
 		"ERROR_REASON_HELD_BY_OTHER":        8,
 		"ERROR_REASON_NOT_SHARED_FOR_USE":   9,
-		"ERROR_REASON_REASON_REQUIRED":      10,
 		"ERROR_REASON_COOLDOWN":             11,
 		"ERROR_REASON_GRANT_SPENT":          12,
 		"ERROR_REASON_CARD_UNREADABLE":      13,
@@ -947,7 +943,7 @@ const file_cards_v2_common_proto_rawDesc = "" +
 	"\x11TX_STATUS_PENDING\x10\x01\x12\x17\n" +
 	"\x13TX_STATUS_COMPLETED\x10\x02\x12\x16\n" +
 	"\x12TX_STATUS_DECLINED\x10\x03\x12\x16\n" +
-	"\x12TX_STATUS_REFUNDED\x10\x04*\xb5\x05\n" +
+	"\x12TX_STATUS_REFUNDED\x10\x04*\xb7\x05\n" +
 	"\vErrorReason\x12\x1c\n" +
 	"\x18ERROR_REASON_UNSPECIFIED\x10\x00\x12\x1a\n" +
 	"\x16ERROR_REASON_NOT_FOUND\x10\x01\x12\x1c\n" +
@@ -958,9 +954,7 @@ const file_cards_v2_common_proto_rawDesc = "" +
 	"\x1aERROR_REASON_ISSUER_FAILED\x10\x06\x12 \n" +
 	"\x1cERROR_REASON_CARD_NOT_ACTIVE\x10\a\x12\x1e\n" +
 	"\x1aERROR_REASON_HELD_BY_OTHER\x10\b\x12#\n" +
-	"\x1fERROR_REASON_NOT_SHARED_FOR_USE\x10\t\x12 \n" +
-	"\x1cERROR_REASON_REASON_REQUIRED\x10\n" +
-	"\x12\x19\n" +
+	"\x1fERROR_REASON_NOT_SHARED_FOR_USE\x10\t\x12\x19\n" +
 	"\x15ERROR_REASON_COOLDOWN\x10\v\x12\x1c\n" +
 	"\x18ERROR_REASON_GRANT_SPENT\x10\f\x12 \n" +
 	"\x1cERROR_REASON_CARD_UNREADABLE\x10\r\x12\x1c\n" +
@@ -970,7 +964,9 @@ const file_cards_v2_common_proto_rawDesc = "" +
 	"\x19ERROR_REASON_LABEL_EXISTS\x10\x11\x12\x1d\n" +
 	"\x19ERROR_REASON_RULE_INVALID\x10\x12\x12\"\n" +
 	"\x1eERROR_REASON_NO_HOLDER_PROFILE\x10\x13\x12\x1f\n" +
-	"\x1bERROR_REASON_PROFILE_IN_USE\x10\x14B\xa9\x01\n" +
+	"\x1bERROR_REASON_PROFILE_IN_USE\x10\x14\"\x04\b\n" +
+	"\x10\n" +
+	"*\x1cERROR_REASON_REASON_REQUIREDB\xa9\x01\n" +
 	"\fcom.cards.v2B\vCommonProtoP\x01ZKgithub.com/fox1ck-org/vibe-cards-client/v2/conformance/gen/cards/v2;cardsv2\xa2\x02\x03CXX\xaa\x02\bCards.V2\xca\x02\bCards\\V2\xe2\x02\x14Cards\\V2\\GPBMetadata\xea\x02\tCards::V2b\x06proto3"
 
 var (
