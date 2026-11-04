@@ -231,3 +231,23 @@ func TestWaitThreeDSNothingArrivedIsNotAnError(t *testing.T) {
 		t.Fatalf("body %s", body)
 	}
 }
+
+// The payer's fields go out on the server's wire: the usage's operator and a
+// spend query's spent_by.
+func TestOperatorAndSpentByOnTheWire(t *testing.T) {
+	op := Person("sub-2")
+	b, err := json.Marshal(Usage{App: "vibe-accounts", ExternalID: "acc-1", Operator: &op})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(b), `"operator":{"kind":1,"id":"sub-2"}`) {
+		t.Fatalf("usage: %s", b)
+	}
+	b, err = json.Marshal(SpendQuery{SpentBy: []string{"me"}, GroupBy: GroupByCard})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(b), `"spentBy":["me"]`) {
+		t.Fatalf("query: %s", b)
+	}
+}
