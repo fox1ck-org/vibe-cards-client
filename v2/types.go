@@ -158,6 +158,11 @@ type Usage struct {
 	AddedAt *time.Time `json:"addedAt,omitempty"`
 	// The holder the usage was added for, when somebody else added it.
 	OnBehalfOf *Principal `json:"onBehalfOf,omitempty"`
+	// The person who works the thing the card pays for (the ad account's
+	// buyer). Charges on the card while this usage is live are that person's
+	// spend (GroupByPerson, SpendQuery.SpentBy). A PERSON; only an admin, a
+	// service or that person may name it.
+	Operator *Principal `json:"operator,omitempty"`
 }
 
 // Card is a card as everyone sees it. It never carries the number.

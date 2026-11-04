@@ -26,6 +26,11 @@ type SpendQuery struct {
 	Bucket          Bucket     `json:"bucket,omitempty"`
 	ComparePrevious bool       `json:"comparePrevious,omitempty"`
 	Page            Page       `json:"page"`
+	// Only the charges these people paid ("me" = the caller): the live
+	// usage's operator, else the holder at the time, else the card's person
+	// owner. A caller reads their own across every card; anyone else's needs
+	// an all-seeing role.
+	SpentBy []string `json:"spentBy,omitempty"`
 }
 
 // SpendTotals are the sums over what a query selected.
