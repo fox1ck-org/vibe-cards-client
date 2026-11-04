@@ -2,7 +2,19 @@ name: Client checks
 on:
   push:
     branches: [main]
+    # Docs-only changes don't need a build/test run (paths-ignore, not paths: a
+    # missed real dependency would silently skip CI).
+    paths-ignore:
+      - '**/*.md'
+      - 'docs/**'
+      - '.github/ISSUE_TEMPLATE/**'
+      - 'LICENSE'
   pull_request:
+    paths-ignore:
+      - '**/*.md'
+      - 'docs/**'
+      - '.github/ISSUE_TEMPLATE/**'
+      - 'LICENSE'
 permissions:
   contents: read
 jobs:
