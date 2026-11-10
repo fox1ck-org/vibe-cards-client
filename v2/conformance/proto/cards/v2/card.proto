@@ -241,6 +241,23 @@ message IssueRequest {
   string holder_profile_id = 10;
   // Put the cards straight into the owner's hands.
   bool take = 11;
+  // Frame the owner on their first card (see OwnerFrame). An administrator,
+  // or a service acting for the owner; anybody else is refused.
+  OwnerFrame owner_frame = 12;
+}
+
+// OwnerFrame asks for the owner's frame (IssuingService.SavePersonLimits) to
+// be set from this issue, before anything is bought: its issuer, a card's
+// limit and the whole budget from limits.total, and a day's cap. It is how a
+// service that issues somebody their first card says how far they are
+// trusted. It applies once: a person who already has a frame keeps it, and
+// so does a repeat of a press already made — after that the frame is the
+// administrators' to change.
+message OwnerFrame {
+  // What the owner's cards may spend together in a report day. No issuer
+  // holds a daily limit: it is the person's daily_limit rule — a notice at
+  // 80 %, their cards paused at 100 % until the day turns.
+  Money daily = 1 [(buf.validate.field).required = true];
 }
 
 message IssueResponse {

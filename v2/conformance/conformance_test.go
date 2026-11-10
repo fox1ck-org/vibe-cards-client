@@ -710,7 +710,8 @@ func TestEveryMethodSpeaksTheProto(t *testing.T) {
 			"Issue": func() error {
 				_, err := client.Issue(ctx, vibecards.IssueInput{RequestID: "r", Owner: ptr(vibecards.Person("sub")), Count: 2,
 					Limits: limits, Name: "n", Labels: []string{"uk"}, Currency: "USD", BIN: "424242",
-					IssuerAccountID: "acc", HolderProfileID: "hp", Take: true})
+					IssuerAccountID: "acc", HolderProfileID: "hp", Take: true,
+					OwnerFrame: &vibecards.OwnerFrame{Daily: vibecards.USD(1000)}})
 				return err
 			},
 			"Update": func() error {

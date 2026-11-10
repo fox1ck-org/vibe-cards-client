@@ -31,6 +31,23 @@ type IssueInput struct {
 	HolderProfileID string `json:"holderProfileId,omitempty"`
 	// Put the cards straight into the owner's hands.
 	Take bool `json:"take,omitempty"`
+	// Frame the owner on their first card; see OwnerFrame.
+	OwnerFrame *OwnerFrame `json:"ownerFrame,omitempty"`
+}
+
+// OwnerFrame asks for the owner's frame to be set from the issue, before
+// anything is bought: the issue's issuer, a card's limit and the whole budget
+// from Limits.Total, and a day's cap. It is how a service that issues
+// somebody their first card says how far they are trusted. It applies once: a
+// person who already has a frame keeps it, and so does a repeat of a press
+// already made — after that the frame is the administrators' to change in
+// the cards console. An administrator, or a service acting for the owner
+// (OnBehalfOf); anybody else is refused with ErrNotAllowed.
+type OwnerFrame struct {
+	// What the owner's cards may spend together in a report day. No issuer
+	// holds a daily limit: vibe-cards keeps it as the person's rule, a notice
+	// at 80 % and their cards paused at 100 % until the day turns. Required.
+	Daily Money `json:"daily"`
 }
 
 // Issue buys `Count` new cards. A card the issuer builds slowly comes back
