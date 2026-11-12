@@ -58,6 +58,8 @@ enum RuleKind {
   RULE_KIND_MCC = 7;
   // Keeps a held card's issuer limit near its recent spend. Params: auto_limit.
   RULE_KIND_AUTO_LIMIT = 8;
+  // A person's budget (PersonLimits.budget): notify at 90 %, pause at 100 %.
+  RULE_KIND_BUDGET = 9;
 }
 
 enum RuleAction {

@@ -44,6 +44,8 @@ const (
 	RuleKind_RULE_KIND_MCC RuleKind = 7
 	// Keeps a held card's issuer limit near its recent spend. Params: auto_limit.
 	RuleKind_RULE_KIND_AUTO_LIMIT RuleKind = 8
+	// A person's budget (PersonLimits.budget): notify at 90 %, pause at 100 %.
+	RuleKind_RULE_KIND_BUDGET RuleKind = 9
 )
 
 // Enum value maps for RuleKind.
@@ -58,6 +60,7 @@ var (
 		6: "RULE_KIND_COUNTRIES",
 		7: "RULE_KIND_MCC",
 		8: "RULE_KIND_AUTO_LIMIT",
+		9: "RULE_KIND_BUDGET",
 	}
 	RuleKind_value = map[string]int32{
 		"RULE_KIND_UNSPECIFIED": 0,
@@ -69,6 +72,7 @@ var (
 		"RULE_KIND_COUNTRIES":   6,
 		"RULE_KIND_MCC":         7,
 		"RULE_KIND_AUTO_LIMIT":  8,
+		"RULE_KIND_BUDGET":      9,
 	}
 )
 
@@ -2178,7 +2182,7 @@ const file_cards_v2_rule_proto_rawDesc = "" +
 	"\x02id\x18\x01 \x01(\tB\a\xbaH\x04r\x02\x10\x01R\x02id\x12!\n" +
 	"\fresume_cards\x18\x02 \x01(\bR\vresumeCards\"=\n" +
 	"\x14ResolveAlertResponse\x12%\n" +
-	"\x05alert\x18\x01 \x01(\v2\x0f.cards.v2.AlertR\x05alert*\xe9\x01\n" +
+	"\x05alert\x18\x01 \x01(\v2\x0f.cards.v2.AlertR\x05alert*\xff\x01\n" +
 	"\bRuleKind\x12\x19\n" +
 	"\x15RULE_KIND_UNSPECIFIED\x10\x00\x12\x19\n" +
 	"\x15RULE_KIND_DAILY_LIMIT\x10\x01\x12\x17\n" +
@@ -2188,7 +2192,8 @@ const file_cards_v2_rule_proto_rawDesc = "" +
 	"\x12RULE_KIND_DECLINES\x10\x05\x12\x17\n" +
 	"\x13RULE_KIND_COUNTRIES\x10\x06\x12\x11\n" +
 	"\rRULE_KIND_MCC\x10\a\x12\x18\n" +
-	"\x14RULE_KIND_AUTO_LIMIT\x10\b*X\n" +
+	"\x14RULE_KIND_AUTO_LIMIT\x10\b\x12\x14\n" +
+	"\x10RULE_KIND_BUDGET\x10\t*X\n" +
 	"\n" +
 	"RuleAction\x12\x1b\n" +
 	"\x17RULE_ACTION_UNSPECIFIED\x10\x00\x12\x16\n" +

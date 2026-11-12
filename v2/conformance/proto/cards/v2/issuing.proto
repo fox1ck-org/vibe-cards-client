@@ -221,13 +221,15 @@ message Bin {
   repeated string labels = 6;
   // A short description of the terms for people.
   string description = 7;
-  // How long an issue takes, at worst ("до 5 минут").
-  string readiness = 8;
+  reserved 8;
+  reserved "readiness";
   repeated FeeTerm fee_terms = 9;
   // The platform's price per issued card (PLATFORM mode, by tariff).
   optional Money platform_issue_fee = 10;
   // The platform's percentage of spend (PLATFORM mode, by tariff).
   optional Decimal platform_spend_percent = 11;
+  // How long an issue takes at worst, in minutes; 0 — at once.
+  int32 ready_within_minutes = 17;
 }
 
 message ListBinsRequest {}
@@ -414,10 +416,10 @@ message PersonLimitsUsage {
   int32 open_cards = 1;
   // Issues in the last 24 hours that did not fail.
   int32 issued_today = 2;
-  Money exposure = 3;
-  // An open card of theirs has no limit: no budget can be met until it has
-  // one.
-  bool unlimited_card = 4;
+  reserved 3, 4;
+  reserved "exposure", "unlimited_card";
+  // What their cards spent, ever — what PersonLimits.budget is measured by.
+  Money spent = 6;
 }
 
 message ListPersonLimitsRequest {}

@@ -1107,16 +1107,16 @@ type Bin struct {
 	// Neutral words from the adapter ("ads", "no_3ds", "shared_balance").
 	Labels []string `protobuf:"bytes,6,rep,name=labels,proto3" json:"labels,omitempty"`
 	// A short description of the terms for people.
-	Description string `protobuf:"bytes,7,opt,name=description,proto3" json:"description,omitempty"`
-	// How long an issue takes, at worst ("до 5 минут").
-	Readiness string     `protobuf:"bytes,8,opt,name=readiness,proto3" json:"readiness,omitempty"`
-	FeeTerms  []*FeeTerm `protobuf:"bytes,9,rep,name=fee_terms,json=feeTerms,proto3" json:"fee_terms,omitempty"`
+	Description string     `protobuf:"bytes,7,opt,name=description,proto3" json:"description,omitempty"`
+	FeeTerms    []*FeeTerm `protobuf:"bytes,9,rep,name=fee_terms,json=feeTerms,proto3" json:"fee_terms,omitempty"`
 	// The platform's price per issued card (PLATFORM mode, by tariff).
 	PlatformIssueFee *Money `protobuf:"bytes,10,opt,name=platform_issue_fee,json=platformIssueFee,proto3,oneof" json:"platform_issue_fee,omitempty"`
 	// The platform's percentage of spend (PLATFORM mode, by tariff).
 	PlatformSpendPercent *Decimal `protobuf:"bytes,11,opt,name=platform_spend_percent,json=platformSpendPercent,proto3,oneof" json:"platform_spend_percent,omitempty"`
-	unknownFields        protoimpl.UnknownFields
-	sizeCache            protoimpl.SizeCache
+	// How long an issue takes at worst, in minutes; 0 — at once.
+	ReadyWithinMinutes int32 `protobuf:"varint,17,opt,name=ready_within_minutes,json=readyWithinMinutes,proto3" json:"ready_within_minutes,omitempty"`
+	unknownFields      protoimpl.UnknownFields
+	sizeCache          protoimpl.SizeCache
 }
 
 func (x *Bin) Reset() {
@@ -1198,13 +1198,6 @@ func (x *Bin) GetDescription() string {
 	return ""
 }
 
-func (x *Bin) GetReadiness() string {
-	if x != nil {
-		return x.Readiness
-	}
-	return ""
-}
-
 func (x *Bin) GetFeeTerms() []*FeeTerm {
 	if x != nil {
 		return x.FeeTerms
@@ -1224,6 +1217,13 @@ func (x *Bin) GetPlatformSpendPercent() *Decimal {
 		return x.PlatformSpendPercent
 	}
 	return nil
+}
+
+func (x *Bin) GetReadyWithinMinutes() int32 {
+	if x != nil {
+		return x.ReadyWithinMinutes
+	}
+	return 0
 }
 
 type ListBinsRequest struct {
@@ -2552,11 +2552,9 @@ type PersonLimitsUsage struct {
 	state     protoimpl.MessageState `protogen:"open.v1"`
 	OpenCards int32                  `protobuf:"varint,1,opt,name=open_cards,json=openCards,proto3" json:"open_cards,omitempty"`
 	// Issues in the last 24 hours that did not fail.
-	IssuedToday int32  `protobuf:"varint,2,opt,name=issued_today,json=issuedToday,proto3" json:"issued_today,omitempty"`
-	Exposure    *Money `protobuf:"bytes,3,opt,name=exposure,proto3" json:"exposure,omitempty"`
-	// An open card of theirs has no limit: no budget can be met until it has
-	// one.
-	UnlimitedCard bool `protobuf:"varint,4,opt,name=unlimited_card,json=unlimitedCard,proto3" json:"unlimited_card,omitempty"`
+	IssuedToday int32 `protobuf:"varint,2,opt,name=issued_today,json=issuedToday,proto3" json:"issued_today,omitempty"`
+	// What their cards spent, ever — what PersonLimits.budget is measured by.
+	Spent         *Money `protobuf:"bytes,6,opt,name=spent,proto3" json:"spent,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2605,18 +2603,11 @@ func (x *PersonLimitsUsage) GetIssuedToday() int32 {
 	return 0
 }
 
-func (x *PersonLimitsUsage) GetExposure() *Money {
+func (x *PersonLimitsUsage) GetSpent() *Money {
 	if x != nil {
-		return x.Exposure
+		return x.Spent
 	}
 	return nil
-}
-
-func (x *PersonLimitsUsage) GetUnlimitedCard() bool {
-	if x != nil {
-		return x.UnlimitedCard
-	}
-	return false
 }
 
 type ListPersonLimitsRequest struct {
@@ -3650,7 +3641,7 @@ const file_cards_v2_issuing_proto_rawDesc = "" +
 	"\b_account\"3\n" +
 	"\x18DisconnectAccountRequest\x12\x17\n" +
 	"\x02id\x18\x01 \x01(\tB\a\xbaH\x04r\x02\x10\x01R\x02id\"\x1b\n" +
-	"\x19DisconnectAccountResponse\"\xe9\x03\n" +
+	"\x19DisconnectAccountResponse\"\x8e\x04\n" +
 	"\x03Bin\x12\x10\n" +
 	"\x03bin\x18\x01 \x01(\tR\x03bin\x12\x18\n" +
 	"\anetwork\x18\x02 \x01(\tR\anetwork\x12\x1a\n" +
@@ -3658,14 +3649,14 @@ const file_cards_v2_issuing_proto_rawDesc = "" +
 	"\x11issuer_account_id\x18\x04 \x01(\tR\x0fissuerAccountId\x12\"\n" +
 	"\fcapabilities\x18\x05 \x03(\tR\fcapabilities\x12\x16\n" +
 	"\x06labels\x18\x06 \x03(\tR\x06labels\x12 \n" +
-	"\vdescription\x18\a \x01(\tR\vdescription\x12\x1c\n" +
-	"\treadiness\x18\b \x01(\tR\treadiness\x12.\n" +
+	"\vdescription\x18\a \x01(\tR\vdescription\x12.\n" +
 	"\tfee_terms\x18\t \x03(\v2\x11.cards.v2.FeeTermR\bfeeTerms\x12B\n" +
 	"\x12platform_issue_fee\x18\n" +
 	" \x01(\v2\x0f.cards.v2.MoneyH\x00R\x10platformIssueFee\x88\x01\x01\x12L\n" +
-	"\x16platform_spend_percent\x18\v \x01(\v2\x11.cards.v2.DecimalH\x01R\x14platformSpendPercent\x88\x01\x01B\x15\n" +
+	"\x16platform_spend_percent\x18\v \x01(\v2\x11.cards.v2.DecimalH\x01R\x14platformSpendPercent\x88\x01\x01\x120\n" +
+	"\x14ready_within_minutes\x18\x11 \x01(\x05R\x12readyWithinMinutesB\x15\n" +
 	"\x13_platform_issue_feeB\x19\n" +
-	"\x17_platform_spend_percent\"\x11\n" +
+	"\x17_platform_spend_percentJ\x04\b\b\x10\tR\treadiness\"\x11\n" +
 	"\x0fListBinsRequest\"5\n" +
 	"\x10ListBinsResponse\x12!\n" +
 	"\x04bins\x18\x01 \x03(\v2\r.cards.v2.BinR\x04bins\"\x9e\x03\n" +
@@ -3774,13 +3765,12 @@ const file_cards_v2_issuing_proto_rawDesc = "" +
 	"\x0f_max_open_cardsB\x14\n" +
 	"\x12_max_cards_per_dayB\x11\n" +
 	"\x0f_max_card_limitB\t\n" +
-	"\a_budget\"\xa9\x01\n" +
+	"\a_budget\"\xa2\x01\n" +
 	"\x11PersonLimitsUsage\x12\x1d\n" +
 	"\n" +
 	"open_cards\x18\x01 \x01(\x05R\topenCards\x12!\n" +
-	"\fissued_today\x18\x02 \x01(\x05R\vissuedToday\x12+\n" +
-	"\bexposure\x18\x03 \x01(\v2\x0f.cards.v2.MoneyR\bexposure\x12%\n" +
-	"\x0eunlimited_card\x18\x04 \x01(\bR\runlimitedCard\"\x19\n" +
+	"\fissued_today\x18\x02 \x01(\x05R\vissuedToday\x12%\n" +
+	"\x05spent\x18\x06 \x01(\v2\x0f.cards.v2.MoneyR\x05spentJ\x04\b\x03\x10\x04J\x04\b\x04\x10\x05R\bexposureR\x0eunlimited_card\"\x19\n" +
 	"\x17ListPersonLimitsRequest\"J\n" +
 	"\x18ListPersonLimitsResponse\x12.\n" +
 	"\x06limits\x18\x01 \x03(\v2\x16.cards.v2.PersonLimitsR\x06limits\"Q\n" +
@@ -4020,7 +4010,7 @@ var file_cards_v2_issuing_proto_depIdxs = []int32{
 	64, // 52: cards.v2.PersonLimits.budget:type_name -> cards.v2.Money
 	42, // 53: cards.v2.PersonLimits.usage:type_name -> cards.v2.PersonLimitsUsage
 	65, // 54: cards.v2.PersonLimits.updated_at:type_name -> google.protobuf.Timestamp
-	64, // 55: cards.v2.PersonLimitsUsage.exposure:type_name -> cards.v2.Money
+	64, // 55: cards.v2.PersonLimitsUsage.spent:type_name -> cards.v2.Money
 	41, // 56: cards.v2.ListPersonLimitsResponse.limits:type_name -> cards.v2.PersonLimits
 	41, // 57: cards.v2.SavePersonLimitsRequest.limits:type_name -> cards.v2.PersonLimits
 	41, // 58: cards.v2.SavePersonLimitsResponse.limits:type_name -> cards.v2.PersonLimits
