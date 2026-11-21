@@ -201,10 +201,9 @@ enum ErrorReason {
   ERROR_REASON_LABEL_EXISTS = 17;
   // The rule's parameters do not fit its kind.
   ERROR_REASON_RULE_INVALID = 18;
-  // No holder data (name and address) resolves for the card — neither its
-  // own, nor its BIN's, nor its issuer account's, nor the organisation's
-  // default — so a merchant that checks the address would refuse it.
-  ERROR_REASON_NO_HOLDER_PROFILE = 19;
+  // 19 was no_holder_profile: a card is presented without holder data now.
+  reserved 19;
+  reserved "ERROR_REASON_NO_HOLDER_PROFILE";
   // Archiving holder data a BIN or account still resolves to.
   ERROR_REASON_PROFILE_IN_USE = 20;
 }

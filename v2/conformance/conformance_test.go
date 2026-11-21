@@ -536,7 +536,6 @@ var sentinels = map[vibecards.Reason]error{
 	vibecards.ReasonTopUpDisabled:       vibecards.ErrTopUpDisabled,
 	vibecards.ReasonLabelExists:         vibecards.ErrLabelExists,
 	vibecards.ReasonRuleInvalid:         vibecards.ErrRuleInvalid,
-	vibecards.ReasonNoHolderProfile:     vibecards.ErrNoHolderProfile,
 	vibecards.ReasonProfileInUse:        vibecards.ErrProfileInUse,
 }
 
