@@ -17,7 +17,7 @@
 //
 // Refusals are *Error values carrying the server's google.rpc.ErrorInfo
 // reason. Branch with errors.Is against the Err* reasons (ErrHeldByOther,
-// ErrCardNotActive, ErrCardUnreadable, ErrNoHolderProfile, …) — never on the
+// ErrCardNotActive, ErrCardUnreadable, …) — never on the
 // message text.
 //
 // A service that acts for a person says so per call with OnBehalfOf; a

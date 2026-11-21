@@ -64,7 +64,6 @@ func TestReasonsMapToTheirErrors(t *testing.T) {
 		{ReasonTopUpDisabled, "failed_precondition", ErrTopUpDisabled},
 		{ReasonLabelExists, "already_exists", ErrLabelExists},
 		{ReasonRuleInvalid, "invalid_argument", ErrRuleInvalid},
-		{ReasonNoHolderProfile, "failed_precondition", ErrNoHolderProfile},
 		{ReasonProfileInUse, "failed_precondition", ErrProfileInUse},
 	}
 	all := make([]error, 0, len(cases))

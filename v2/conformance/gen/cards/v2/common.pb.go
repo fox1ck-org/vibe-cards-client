@@ -269,10 +269,6 @@ const (
 	ErrorReason_ERROR_REASON_LABEL_EXISTS ErrorReason = 17
 	// The rule's parameters do not fit its kind.
 	ErrorReason_ERROR_REASON_RULE_INVALID ErrorReason = 18
-	// No holder data (name and address) resolves for the card — neither its
-	// own, nor its BIN's, nor its issuer account's, nor the organisation's
-	// default — so a merchant that checks the address would refuse it.
-	ErrorReason_ERROR_REASON_NO_HOLDER_PROFILE ErrorReason = 19
 	// Archiving holder data a BIN or account still resolves to.
 	ErrorReason_ERROR_REASON_PROFILE_IN_USE ErrorReason = 20
 )
@@ -298,7 +294,6 @@ var (
 		16: "ERROR_REASON_TOPUP_DISABLED",
 		17: "ERROR_REASON_LABEL_EXISTS",
 		18: "ERROR_REASON_RULE_INVALID",
-		19: "ERROR_REASON_NO_HOLDER_PROFILE",
 		20: "ERROR_REASON_PROFILE_IN_USE",
 	}
 	ErrorReason_value = map[string]int32{
@@ -320,7 +315,6 @@ var (
 		"ERROR_REASON_TOPUP_DISABLED":       16,
 		"ERROR_REASON_LABEL_EXISTS":         17,
 		"ERROR_REASON_RULE_INVALID":         18,
-		"ERROR_REASON_NO_HOLDER_PROFILE":    19,
 		"ERROR_REASON_PROFILE_IN_USE":       20,
 	}
 )
@@ -943,7 +937,7 @@ const file_cards_v2_common_proto_rawDesc = "" +
 	"\x11TX_STATUS_PENDING\x10\x01\x12\x17\n" +
 	"\x13TX_STATUS_COMPLETED\x10\x02\x12\x16\n" +
 	"\x12TX_STATUS_DECLINED\x10\x03\x12\x16\n" +
-	"\x12TX_STATUS_REFUNDED\x10\x04*\xb7\x05\n" +
+	"\x12TX_STATUS_REFUNDED\x10\x04*\xb9\x05\n" +
 	"\vErrorReason\x12\x1c\n" +
 	"\x18ERROR_REASON_UNSPECIFIED\x10\x00\x12\x1a\n" +
 	"\x16ERROR_REASON_NOT_FOUND\x10\x01\x12\x1c\n" +
@@ -962,11 +956,10 @@ const file_cards_v2_common_proto_rawDesc = "" +
 	"\x18ERROR_REASON_NOT_IN_PLAN\x10\x0f\x12\x1f\n" +
 	"\x1bERROR_REASON_TOPUP_DISABLED\x10\x10\x12\x1d\n" +
 	"\x19ERROR_REASON_LABEL_EXISTS\x10\x11\x12\x1d\n" +
-	"\x19ERROR_REASON_RULE_INVALID\x10\x12\x12\"\n" +
-	"\x1eERROR_REASON_NO_HOLDER_PROFILE\x10\x13\x12\x1f\n" +
+	"\x19ERROR_REASON_RULE_INVALID\x10\x12\x12\x1f\n" +
 	"\x1bERROR_REASON_PROFILE_IN_USE\x10\x14\"\x04\b\n" +
 	"\x10\n" +
-	"*\x1cERROR_REASON_REASON_REQUIREDB\xa9\x01\n" +
+	"\"\x04\b\x13\x10\x13*\x1cERROR_REASON_REASON_REQUIRED*\x1eERROR_REASON_NO_HOLDER_PROFILEB\xa9\x01\n" +
 	"\fcom.cards.v2B\vCommonProtoP\x01ZKgithub.com/fox1ck-org/vibe-cards-client/v2/conformance/gen/cards/v2;cardsv2\xa2\x02\x03CXX\xaa\x02\bCards.V2\xca\x02\bCards\\V2\xe2\x02\x14Cards\\V2\\GPBMetadata\xea\x02\tCards::V2b\x06proto3"
 
 var (

@@ -51,8 +51,6 @@ details, err := cards.CardDetails(ctx, card.ID, &usage)
 switch {
 case errors.Is(err, vibecards.ErrCardUnreadable):
     // The issuer hides its details; the card is quarantined. Return it, take another.
-case errors.Is(err, vibecards.ErrNoHolderProfile):
-    // Configuration: no holder name/address resolves. Retrying will not help.
 }
 submitPaymentForm(details)
 
@@ -104,7 +102,6 @@ Every refusal is a `*vibecards.Error` carrying the server's
 | `card_not_active` | `ErrCardNotActive` | paused / quarantined / closed |
 | `not_shared_for_use` | `ErrNotSharedForUse` | the holder may only VIEW it |
 | `card_unreadable` | `ErrCardUnreadable` | quarantined — return, take another |
-| `no_holder_profile` | `ErrNoHolderProfile` | configuration, not transient |
 | `grant_spent` | `ErrGrantSpent` | ticket expired or already redeemed |
 | `in_progress` | `ErrInProgress` | retry with the **same** request id |
 | `issuer_unsupported` | `ErrIssuerUnsupported` | `err.(*Error).MissingCapability()` names it |

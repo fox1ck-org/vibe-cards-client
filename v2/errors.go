@@ -33,7 +33,6 @@ const (
 	ReasonTopUpDisabled       Reason = "topup_disabled"
 	ReasonLabelExists         Reason = "label_exists"
 	ReasonRuleInvalid         Reason = "rule_invalid"
-	ReasonNoHolderProfile     Reason = "no_holder_profile"
 	ReasonProfileInUse        Reason = "profile_in_use"
 )
 
@@ -125,13 +124,12 @@ var (
 	ErrCardUnreadable = reasonErr(ReasonCardUnreadable, "the issuer hides the card's number, expiry or cvv")
 	// ErrInProgress: the same request_id is still being processed. Ask again
 	// with the SAME request_id later; a new one would buy another card.
-	ErrInProgress      = reasonErr(ReasonInProgress, "the same request is still being processed")
-	ErrNotInPlan       = reasonErr(ReasonNotInPlan, "the organisation's plan does not include this")
-	ErrTopUpDisabled   = reasonErr(ReasonTopUpDisabled, "top-up is off")
-	ErrLabelExists     = reasonErr(ReasonLabelExists, "a label with this name already exists")
-	ErrRuleInvalid     = reasonErr(ReasonRuleInvalid, "the rule's parameters do not fit its kind")
-	ErrNoHolderProfile = reasonErr(ReasonNoHolderProfile, "no holder name and address resolves for the card")
-	ErrProfileInUse    = reasonErr(ReasonProfileInUse, "the holder data is still in use")
+	ErrInProgress    = reasonErr(ReasonInProgress, "the same request is still being processed")
+	ErrNotInPlan     = reasonErr(ReasonNotInPlan, "the organisation's plan does not include this")
+	ErrTopUpDisabled = reasonErr(ReasonTopUpDisabled, "top-up is off")
+	ErrLabelExists   = reasonErr(ReasonLabelExists, "a label with this name already exists")
+	ErrRuleInvalid   = reasonErr(ReasonRuleInvalid, "the rule's parameters do not fit its kind")
+	ErrProfileInUse  = reasonErr(ReasonProfileInUse, "the holder data is still in use")
 )
 
 // Errors without a reason: transport-level answers and the client's own.
