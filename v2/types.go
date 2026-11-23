@@ -78,8 +78,8 @@ func Service(id string) Principal { return Principal{Kind: PrincipalService, ID:
 
 // Filter values with a meaning of their own.
 const (
-	// Me is the caller — for a service under OnBehalfOf, the person it acts
-	// for (vibe-cards since К1-3b); for a service on its own, the service.
+	// Me is the caller — for a service under WithOnBehalf, the person it acts
+	// for; for a service on its own, the service.
 	Me = "me"
 	// Nobody, in Filter.Holder, is a card nobody holds.
 	Nobody = "none"

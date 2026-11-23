@@ -29,7 +29,7 @@ type CardDetails struct {
 // IssueGrant mints a ticket for one card. SERVICES ONLY: an API key with
 // the PAN scope; a person's token is refused (ErrNotAllowed). The card must
 // be ACTIVE and held by the service or by the person it acts for
-// (OnBehalfOf) — or theirs, or shared with them for USE. A card the issuer
+// (WithOnBehalf) — or theirs, or shared with them for USE. A card the issuer
 // last showed without details is refused with ErrCardUnreadable before a
 // ticket is spent on it.
 //

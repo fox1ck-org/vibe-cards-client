@@ -12,7 +12,7 @@ const holdingService = "/cards.v2.HoldingService/"
 type TakeInput struct {
 	CardID string `json:"cardId"`
 	// Who will hold it. Nil: the caller — or, for a service, the person
-	// named with OnBehalfOf. Only an admin takes for somebody else.
+	// named with WithOnBehalf. Only an admin takes for somebody else.
 	Holder *Principal `json:"holder,omitempty"`
 	// Raises the card's limit for this holding, where the issuer can.
 	// Nil: the limit the card was last held (or issued) with.
@@ -40,7 +40,7 @@ func (c *Client) Take(ctx context.Context, in TakeInput) (*Card, error) {
 type TakeFirstInput struct {
 	// Narrows the candidates. Holder is forced to Nobody; Status defaults
 	// to ACTIVE. Filters run with the CALLER's visibility — under
-	// OnBehalfOf, the person's: their cards, their hands, what was shared
+	// WithOnBehalf, the person's: their cards, their hands, what was shared
 	// with them; narrow further with Owner or SharedWith. A card the holder
 	// may not use is skipped, not taken.
 	Filter Filter

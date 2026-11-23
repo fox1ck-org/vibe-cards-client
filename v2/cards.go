@@ -17,7 +17,7 @@ type IssueInput struct {
 	// One press of the button: a retry with the same id answers the cards of
 	// the first attempt (or ErrInProgress), never more cards. Required.
 	RequestID string `json:"requestId"`
-	// Whose the cards will be; nil: the caller (or the person OnBehalfOf).
+	// Whose the cards will be; nil: the caller (or the person under WithOnBehalf).
 	Owner  *Principal `json:"owner,omitempty"`
 	Count  int32      `json:"count"`
 	Limits *Limits    `json:"limits,omitempty"`
@@ -42,7 +42,7 @@ type IssueInput struct {
 // person who already has a frame keeps it, and so does a repeat of a press
 // already made — after that the frame is the administrators' to change in
 // the cards console. An administrator, or a service acting for the owner
-// (OnBehalfOf); anybody else is refused with ErrNotAllowed.
+// (WithOnBehalf); anybody else is refused with ErrNotAllowed.
 type OwnerFrame struct {
 	// What the owner's cards may spend together in a report day. No issuer
 	// holds a daily limit: vibe-cards keeps it as the person's rule, a notice
@@ -220,7 +220,7 @@ type BulkOperation struct {
 }
 
 // GetBulkOperation follows a background Bulk. Only whoever started it (the
-// person, under OnBehalfOf) or an admin reads it; anybody else gets
+// person, under WithOnBehalf) or an admin reads it; anybody else gets
 // ErrNotFound.
 func (c *Client) GetBulkOperation(ctx context.Context, operationID string) (*BulkOperation, error) {
 	var out struct {
