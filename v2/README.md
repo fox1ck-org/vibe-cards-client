@@ -27,9 +27,10 @@ won the race.
 ## A service, for a person
 
 ```go
-// The person who pressed the button. Requires the key's `on_behalf` scope;
-// without it vibe-cards ignores the header and the service acts as itself.
-ctx = vibecards.OnBehalfOf(ctx, buyerSub, buyerEmail)
+// The person who pressed the button, of their org, as this service's
+// account of realm customers (WithTokenSource on the client). Requires the
+// account's `on_behalf` scope in vibe-cards' ON_BEHALF_SCOPES.
+ctx = vibecards.WithOnBehalf(ctx, orgID, buyerSub)
 usage := vibecards.Usage{App: "vibe-accounts", ExternalID: accountID, URL: accountURL, Label: "UK-01"}
 
 card, err := cards.TakeFirst(ctx, vibecards.TakeFirstInput{
@@ -60,12 +61,11 @@ code, err := cards.WaitThreeDS(ctx, card.ID, since, 2*time.Minute) // nil, nil: 
 _, err = cards.Return(ctx, card.ID, "account died")
 ```
 
-Under `OnBehalfOf` the service **is that person** to vibe-cards (since
-vibe-cards К1-3b): it sees and may use what the person sees and may use, with
-the key's own scopes on top (`pan:redeem`, taking for somebody else), never an
-admin's reach; `Me` in a filter or principal is the person too. Without
-`OnBehalfOf` a service key sees only what was shared with the service itself —
-usually nothing — so name the person on every call that selects cards.
+Under `WithOnBehalf` the service **is that person** to vibe-cards: it sees and
+may use what the person sees and may use, with the account's scopes on top
+(`pan:redeem`, taking for somebody else), never an admin's reach; `Me` in a
+filter or principal is the person too. A `vck_` key acts for nobody: it sees
+only what was shared with it.
 
 ## Find a card by where it works
 
@@ -213,7 +213,3 @@ service's reach (take a card for a person it names, name who runs a usage);
 and person are required; a call missing either fails before any request. No
 role or email is sent. Resolve a historical subject of another realm through
 the identity directory first.
-
-`OnBehalfOf` is the service-key protocol (`X-Actor-*`, `vck_` key with the
-`on_behalf` scope), being removed: move to `WithOnBehalf`. On one context the
-protocol selected last wins.

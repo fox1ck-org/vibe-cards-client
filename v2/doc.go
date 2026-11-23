@@ -20,9 +20,10 @@
 // ErrCardNotActive, ErrCardUnreadable, …) — never on the
 // message text.
 //
-// A service that acts for a person says so per call with OnBehalfOf; a
-// service forwarding a person's own token (a BFF) uses WithToken. Both are
-// context values, so one Client serves every caller.
+// A service that acts for a person says so per call with WithOnBehalf (its
+// service account's token from WithTokenSource); a service forwarding a
+// person's own token (a BFF) uses WithToken. Both are context values, so one
+// Client serves every caller.
 //
 // Like v1, the package has no dependencies beyond the standard library: it
 // speaks Connect's unary JSON protocol directly, so importing it adds

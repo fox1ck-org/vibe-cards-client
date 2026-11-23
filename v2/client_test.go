@@ -128,7 +128,7 @@ func reasonBody(reason, code string) string {
 	return string(raw)
 }
 
-func TestHeadersCarryTokenAndActor(t *testing.T) {
+func TestHeadersCarryTheToken(t *testing.T) {
 	rec := &recorder{handlers: map[string]func(string) (int, string){
 		"/cards.v2.CardService/Get": func(string) (int, string) { return 200, `{"card":{"id":"c1"}}` },
 	}}
@@ -136,19 +136,18 @@ func TestHeadersCarryTokenAndActor(t *testing.T) {
 	defer srv.Close()
 	c := New(srv.URL+"/", "vck_service")
 
-	ctx := OnBehalfOf(context.Background(), "sub-1", "person@example.test")
-	if _, err := c.Get(ctx, "c1"); err != nil {
+	if _, err := c.Get(context.Background(), "c1"); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := c.Get(WithToken(context.Background(), "jwt-of-person"), "c1"); err != nil {
 		t.Fatal(err)
 	}
 	h := rec.headers
-	if h[0].Get("Authorization") != "Bearer vck_service" || h[0].Get(HeaderActorSub) != "sub-1" ||
-		h[0].Get(HeaderActorEmail) != "person@example.test" || h[0].Get("Content-Type") != "application/json" {
+	if h[0].Get("Authorization") != "Bearer vck_service" || h[0].Get(HeaderOnBehalfSub) != "" ||
+		h[0].Get("Content-Type") != "application/json" {
 		t.Fatalf("first: %v", h[0])
 	}
-	if h[1].Get("Authorization") != "Bearer jwt-of-person" || h[1].Get(HeaderActorSub) != "" {
+	if h[1].Get("Authorization") != "Bearer jwt-of-person" || h[1].Get(HeaderOnBehalfSub) != "" {
 		t.Fatalf("second: %v", h[1])
 	}
 }
@@ -253,35 +252,27 @@ func TestOperatorAndSpentByOnTheWire(t *testing.T) {
 }
 
 // WithOnBehalf sends the platform's X-On-Behalf-* pair with the service
-// account's token, replaces OnBehalfOf's X-Actor-* (and is replaced by it),
-// and a call missing the org or the person never reaches the server.
+// account's token, and a call missing the org or the person never reaches
+// the server.
 func TestCanonicalOnBehalfHeaders(t *testing.T) {
 	rec := &recorder{handlers: map[string]func(string) (int, string){"/cards.v2.CardService/Get": func(string) (int, string) { return 200, `{"card":{"id":"c1"}}` }}}
 	srv := httptest.NewServer(rec)
 	defer srv.Close()
 	c := New(srv.URL, "")
-	legacy := WithToken(OnBehalfOf(context.Background(), "old-sub", "old@example.test"), "sa-token")
-	ctx := WithOnBehalf(legacy, " org ", " canonical-sub ")
+	ctx := WithOnBehalf(WithToken(context.Background(), "sa-token"), " org ", " canonical-sub ")
 	if _, err := c.Get(ctx, "c1"); err != nil {
 		t.Fatal(err)
 	}
 	h := rec.headers[0]
-	if h.Get("Authorization") != "Bearer sa-token" || h.Get(HeaderOnBehalfOrg) != "org" || h.Get(HeaderOnBehalfSub) != "canonical-sub" ||
-		h.Get(HeaderActorSub) != "" || h.Get(HeaderActorEmail) != "" {
+	if h.Get("Authorization") != "Bearer sa-token" || h.Get(HeaderOnBehalfOrg) != "org" || h.Get(HeaderOnBehalfSub) != "canonical-sub" {
 		t.Fatalf("canonical headers: %v", h)
-	}
-	if _, err := c.Get(OnBehalfOf(ctx, "legacy", ""), "c1"); err != nil {
-		t.Fatal(err)
-	}
-	if h := rec.headers[1]; h.Get(HeaderOnBehalfOrg) != "" || h.Get(HeaderOnBehalfSub) != "" || h.Get(HeaderActorSub) != "legacy" {
-		t.Fatalf("mixed protocols: %v", h)
 	}
 	for _, bad := range [][2]string{{"org", ""}, {"", "sub"}, {" ", " "}} {
 		if _, err := c.Get(WithOnBehalf(context.Background(), bad[0], bad[1]), "c1"); err == nil {
 			t.Fatalf("WithOnBehalf(%q, %q) accepted", bad[0], bad[1])
 		}
 	}
-	if len(rec.headers) != 2 {
+	if len(rec.headers) != 1 {
 		t.Fatal("invalid delegation reached server")
 	}
 }
