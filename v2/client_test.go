@@ -285,3 +285,38 @@ func TestCanonicalOnBehalfHeaders(t *testing.T) {
 		t.Fatal("invalid delegation reached server")
 	}
 }
+
+// WithTokenSource authenticates a call that carries no WithToken with the
+// service account's token, before the API key; WithToken still wins, and a
+// token that cannot be had fails the call before any request.
+func TestTokenSourceAuthenticatesTheServiceAccount(t *testing.T) {
+	rec := &recorder{handlers: map[string]func(string) (int, string){"/cards.v2.CardService/Get": func(string) (int, string) { return 200, `{"card":{"id":"c1"}}` }}}
+	srv := httptest.NewServer(rec)
+	defer srv.Close()
+	asks := 0
+	c := New(srv.URL, "vck_key", WithTokenSource(func(context.Context) (string, error) { asks++; return " sa-token ", nil }))
+	ctx := WithOnBehalf(context.Background(), "org", "sub")
+	if _, err := c.Get(ctx, "c1"); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := c.Get(WithToken(ctx, "person-token"), "c1"); err != nil {
+		t.Fatal(err)
+	}
+	if got := rec.headers[0].Get("Authorization"); got != "Bearer sa-token" {
+		t.Fatalf("service account call: %q", got)
+	}
+	if got := rec.headers[1].Get("Authorization"); got != "Bearer person-token" || asks != 1 {
+		t.Fatalf("WithToken call: %q, token source asked %d times", got, asks)
+	}
+	broken := New(srv.URL, "", WithTokenSource(func(context.Context) (string, error) { return "", errors.New("keycloak down") }))
+	if _, err := broken.Get(ctx, "c1"); err == nil || !strings.Contains(err.Error(), "keycloak down") {
+		t.Fatalf("broken token source: %v", err)
+	}
+	empty := New(srv.URL, "", WithTokenSource(func(context.Context) (string, error) { return "", nil }))
+	if _, err := empty.Get(ctx, "c1"); !errors.Is(err, ErrNotConfigured) {
+		t.Fatalf("empty token: %v", err)
+	}
+	if len(rec.headers) != 2 {
+		t.Fatalf("%d requests reached the server, want 2", len(rec.headers))
+	}
+}
