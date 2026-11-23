@@ -186,3 +186,17 @@ issuing read access. `Card.IssuerAccountID` joins a card to an account.
 `Transaction.IssuerReference` is the issuer's stable operation identifier,
 available with OWN issuing read access and empty in PLATFORM mode or when
 unknown. Keep it distinct from `Transaction.ID`, the card service's identifier.
+
+A platform service account (realm customers, trusted by vibe-cards'
+`ON_BEHALF_TRUSTED`) acts for a person with `v2.WithToken(ctx, saToken)` and
+`v2.WithOnBehalf(ctx, orgID, personSub)`: it sends `X-On-Behalf-Org` and
+`X-On-Behalf-Sub`, and the call runs as that person of that org. vibe-cards
+accepts it only on `List` and `Spend` (CardService.List, SpendService.Query);
+every other call, and any caller it does not trust, is refused. Both org and
+person are required; a call missing either fails before any request. No role
+or email is sent. Resolve a historical subject of another realm through the
+identity directory first.
+
+`OnBehalfOf` is the service-key protocol (`X-Actor-*`, `vck_` key with the
+`on_behalf` scope) and the only one vibe-cards accepts for taking, issuing,
+sharing, PAN and 3DS calls. On one context the protocol selected last wins.

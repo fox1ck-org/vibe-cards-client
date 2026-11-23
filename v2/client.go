@@ -14,12 +14,20 @@ import (
 // DefaultBaseURL is a local endpoint. Configure the deployed service URL explicitly.
 const DefaultBaseURL = "http://localhost:8080"
 
-// The headers a service names the person behind a call with. vibe-cards
-// believes them only from a service key carrying the `on_behalf` scope;
-// from anybody else they are ignored, not refused.
+// The headers a service names the person behind a call with.
+//
+// X-Actor-* (OnBehalfOf) is the service-key protocol: vibe-cards believes it
+// only from a service key carrying the `on_behalf` scope; from anybody else it
+// is ignored, not refused.
+//
+// X-On-Behalf-* (WithOnBehalf) is the platform's service-account protocol: a
+// trusted realm customers service account names an org and a person. Anyone
+// else sending these headers is refused, never ignored.
 const (
-	HeaderActorSub   = "X-Actor-Sub"
-	HeaderActorEmail = "X-Actor-Email"
+	HeaderActorSub    = "X-Actor-Sub"
+	HeaderActorEmail  = "X-Actor-Email"
+	HeaderOnBehalfOrg = "X-On-Behalf-Org"
+	HeaderOnBehalfSub = "X-On-Behalf-Sub"
 )
 
 // maxResponse bounds what one answer may be. A List page of a few hundred
@@ -76,9 +84,14 @@ type ctxKey int
 const (
 	keyActor ctxKey = iota
 	keyToken
+	keyOnBehalf
 )
 
 type actor struct{ sub, email string }
+type onBehalf struct {
+	org, sub string
+	active   bool
+}
 
 // OnBehalfOf marks the calls made with the returned context as made for the
 // person `sub` (a Keycloak subject; email is optional, for the journal).
@@ -90,7 +103,28 @@ type actor struct{ sub, email string }
 // acting for them. Without the scope the header is ignored and the service
 // acts as itself — and sees only what was shared with it.
 func OnBehalfOf(ctx context.Context, sub, email string) context.Context {
+	ctx = context.WithValue(ctx, keyOnBehalf, onBehalf{})
 	return context.WithValue(ctx, keyActor, actor{sub: strings.TrimSpace(sub), email: strings.TrimSpace(email)})
+}
+
+// WithOnBehalf marks the calls made with the returned context as made by a
+// platform service account for the person `canonicalSub` (a realm customers
+// subject) of the org `org`. Pair it with WithToken carrying the service
+// account's own token.
+//
+// vibe-cards believes it only from a service account it trusts (its
+// ON_BEHALF_TRUSTED), only on CardService.List and SpendService.Query, and
+// then judges the call as that person of that org: their Cards role from
+// console, what they see. Both org and person are required; a call missing
+// either fails here, before any request. The headers confer no authority of
+// their own and carry no role or email. Resolve a historical subject of
+// another realm through the identity directory first.
+//
+// The protocol selected last on a context wins: WithOnBehalf drops OnBehalfOf's
+// X-Actor-* and OnBehalfOf drops WithOnBehalf's X-On-Behalf-*.
+func WithOnBehalf(ctx context.Context, org, canonicalSub string) context.Context {
+	ctx = context.WithValue(ctx, keyActor, actor{})
+	return context.WithValue(ctx, keyOnBehalf, onBehalf{org: strings.TrimSpace(org), sub: strings.TrimSpace(canonicalSub), active: true})
 }
 
 // WithToken makes the calls made with the returned context authenticate
@@ -132,6 +166,14 @@ func (c *Client) call(ctx context.Context, procedure string, in, out any, slow b
 		if a.email != "" {
 			req.Header.Set(HeaderActorEmail, a.email)
 		}
+	}
+
+	if behalf, ok := ctx.Value(keyOnBehalf).(onBehalf); ok && behalf.active {
+		if behalf.org == "" || behalf.sub == "" {
+			return fmt.Errorf("%s: an on-behalf call names both an organization and a person", procedure)
+		}
+		req.Header.Set(HeaderOnBehalfOrg, behalf.org)
+		req.Header.Set(HeaderOnBehalfSub, behalf.sub)
 	}
 
 	httpc := c.http
