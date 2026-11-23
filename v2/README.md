@@ -188,15 +188,32 @@ available with OWN issuing read access and empty in PLATFORM mode or when
 unknown. Keep it distinct from `Transaction.ID`, the card service's identifier.
 
 A platform service account (realm customers, trusted by vibe-cards'
-`ON_BEHALF_TRUSTED`) acts for a person with `v2.WithToken(ctx, saToken)` and
-`v2.WithOnBehalf(ctx, orgID, personSub)`: it sends `X-On-Behalf-Org` and
-`X-On-Behalf-Sub`, and the call runs as that person of that org. vibe-cards
-accepts it only on `List` and `Spend` (CardService.List, SpendService.Query);
-every other call, and any caller it does not trust, is refused. Both org and
-person are required; a call missing either fails before any request. No role
-or email is sent. Resolve a historical subject of another realm through the
-identity directory first.
+`ON_BEHALF_TRUSTED`) acts for a person with `v2.WithOnBehalf(ctx, orgID,
+personSub)` and its own token — `v2.WithTokenSource` on the client (asked on
+every call that carries no `WithToken`; cache it, e.g. `oauth2.ReuseTokenSource`)
+or `v2.WithToken` on the context:
+
+```go
+cards := vibecards.New(url, "", vibecards.WithTokenSource(func(ctx context.Context) (string, error) {
+    t, err := sa.Token() // client credentials of realm customers
+    if err != nil {
+        return "", err
+    }
+    return t.AccessToken, nil
+}))
+card, err := cards.Get(vibecards.WithOnBehalf(ctx, orgID, buyerSub), cardID)
+```
+
+It sends `X-On-Behalf-Org` and `X-On-Behalf-Sub`, and the call runs as that
+person of that org (their Cards role from console). What else the account may
+do is vibe-cards' `ON_BEHALF_SCOPES` for it: none — only `List` and `Spend`
+(CardService.List, SpendService.Query); `on_behalf` — every call, with a
+service's reach (take a card for a person it names, name who runs a usage);
+`pan:redeem` — `CardDetails`. Any caller it does not trust is refused. Both org
+and person are required; a call missing either fails before any request. No
+role or email is sent. Resolve a historical subject of another realm through
+the identity directory first.
 
 `OnBehalfOf` is the service-key protocol (`X-Actor-*`, `vck_` key with the
-`on_behalf` scope) and the only one vibe-cards accepts for taking, issuing,
-sharing, PAN and 3DS calls. On one context the protocol selected last wins.
+`on_behalf` scope), being removed: move to `WithOnBehalf`. On one context the
+protocol selected last wins.
